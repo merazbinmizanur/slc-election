@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SLC | Secure Election OS</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        emerald: { 400: '#34d399', 500: '#10b981', 600: '#059669' },
+                        gold: { 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706' },
+                        slate: { 850: '#1e293b', 900: '#0f172a', 950: '#020617' },
+                        blue: { 400: '#3b82f6' }
+                    },
+                    fontFamily: {
+                        'outfit': ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body class="bg-slate-950 text-slate-200 font-outfit overflow-x-hidden selection:bg-emerald-500 selection:text-white">
+
+    <!-- NEW: ART & PATTERNS -->
+    <div class="fixed inset-0 z-0 bg-grid-pattern opacity-30 pointer-events-none"></div>
+    <div class="fixed inset-0 z-0 scanlines opacity-20 pointer-events-none"></div>
+    <!-- Background glow -->
+    <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-emerald-900/10 blur-[150px] rounded-full pointer-events-none z-0"></div>
+    
+    <!-- Toast notification -->
+    <div id="custom-toast" class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] hidden">
+        <div class="moving-border-gold rounded-2xl p-[1px] shadow-2xl">
+            <div class="bg-slate-900 px-6 py-3 rounded-[0.9rem] flex items-center gap-3 border border-white/5 min-w-[280px]">
+                <i data-lucide="info" id="toast-icon" class="w-4 h-4 text-gold-400"></i>
+                <span id="toast-message" class="text-sm font-black uppercase tracking-wider text-white"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="fixed top-0 w-full z-50 glass-navbar border-b border-white/5">
+        <div class="max-w-[500px] mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-slate-900 border border-white/10 flex items-center justify-center overflow-hidden">
+                    <!-- Logo fallback to Icon if image fails -->
+                    <img src="logo.png" class="w-full h-full object-cover" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                    <i data-lucide="box" class="w-5 h-5 text-emerald-500 hidden"></i>
+                </div>
+                <div>
+                    <h1 class="text-sm font-black uppercase tracking-[0.15em] leading-none text-white">SLC Protocol</h1>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-widest mt-1">Secure Election OS</p>
+                </div>
+            </div>
+            <button onclick="openAdminLogin()" class="p-2 hover:bg-white/5 rounded-lg transition-colors">
+                <i data-lucide="shield" class="w-4 h-4 text-slate-600 hover:text-white"></i>
+            </button>
+        </div>
+    </nav>
+
+    <main class="relative z-10 pt-28 pb-20 px-5 max-w-[500px] mx-auto min-h-screen">
+
+        <!-- VIEW 1: LANDING -->
+        <section id="view-landing" class="fade-in">
+            <div class="text-center mb-10 relative">
+                <!-- NEW: Hero Illustration Composition -->
+                <div class="w-40 h-40 mx-auto mb-6 relative animate-float">
+                    <!-- Outer Rings -->
+                    <div class="absolute inset-0 border border-emerald-500/20 rounded-full animate-[spin_10s_linear_infinite]"></div>
+                    <div class="absolute inset-4 border border-blue-500/20 rounded-full animate-[spin_15s_linear_infinite_reverse]"></div>
+                    <!-- Central Element -->
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <div class="w-24 h-24 bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl border border-white/10 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.2)] rotate-3">
+                            <i data-lucide="vote" class="w-10 h-10 text-emerald-400"></i>
+                        </div>
+                    </div>
+                    <!-- Floating Particles -->
+                    <div class="absolute top-0 right-0 p-2 bg-slate-900 rounded-lg border border-white/10 shadow-lg animate-bounce">
+                        <i data-lucide="check" class="w-4 h-4 text-gold-400"></i>
+                    </div>
+                    <div class="absolute bottom-2 left-2 p-2 bg-slate-900 rounded-lg border border-white/10 shadow-lg animate-pulse">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-blue-400"></i>
+                    </div>
+                </div>
+
+                <h2 class="text-3xl font-black uppercase tracking-tighter text-white mb-2">Welcome</h2>
+                <h4 class="text-1.5xl font-black uppercase tracking-tighter text-white mb-2">SLC ADMINISTRATOR PANEL ELECTION - P9</h4>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-[0.2em]">Select your role to continue</p>
+            </div>
+            
+            <!-- Voter Expandable Card -->
+            <div class="mb-4">
+                <button onclick="toggleSection('voter')" class="group w-full relative">
+                    <div class="moving-border-blue p-[1.5px] rounded-[2rem] transition-all">
+                        <div class="bg-slate-900 rounded-[1.9rem] p-6 flex items-center gap-5 relative z-10">
+                            <div class="w-14 h-14 rounded-2xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i data-lucide="vote" class="w-6 h-6 text-blue-400"></i>
+                            </div>
+                            <div class="text-left flex-1">
+                                <h3 class="text-lg font-black text-white uppercase tracking-wider">I'm a Voter</h3>
+                                <p class="text-xs text-slate-500 font-bold uppercase mt-1">Get your Election ID & vote</p>
+                            </div>
+                            <div class="ml-auto">
+                                <i data-lucide="chevron-down" id="voter-chevron" class="w-5 h-5 text-slate-600 transition-transform duration-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </button>
+                <div id="voter-options" class="hidden mt-2 overflow-hidden transition-all duration-300">
+                    <div class="bg-slate-900/50 rounded-2xl p-4 border border-blue-500/20 space-y-3">
+                        <button onclick="switchView('voter-reg')" class="w-full py-4 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-black rounded-xl uppercase tracking-wider transition flex items-center justify-center gap-2">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Register as Voter
+                        </button>
+                        <button onclick="switchView('voter-login')" class="w-full py-4 bg-blue-600/20 hover:bg-blue-600/40 text-blue-400 text-xs font-black rounded-xl uppercase tracking-wider transition flex items-center justify-center gap-2">
+                            <i data-lucide="log-in" class="w-4 h-4"></i> Voter Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Candidate Expandable Card -->
+            <div class="mb-6">
+                <button onclick="toggleSection('candidate')" class="group w-full relative">
+                    <div class="moving-border-gold p-[1.5px] rounded-[2rem] transition-all">
+                        <div class="bg-slate-900 rounded-[1.9rem] p-6 flex items-center gap-5 relative z-10">
+                            <div class="w-14 h-14 rounded-2xl bg-gold-500/10 border border-gold-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
+                                <i data-lucide="crown" class="w-6 h-6 text-gold-400"></i>
+                            </div>
+                            <div class="text-left flex-1">
+                                <h3 class="text-lg font-black text-white uppercase tracking-wider">I'm a Candidate</h3>
+                                <p class="text-xs text-slate-500 font-bold uppercase mt-1">Register & get nomination card</p>
+                            </div>
+                            <div class="ml-auto">
+                                <i data-lucide="chevron-down" id="candidate-chevron" class="w-5 h-5 text-slate-600 transition-transform duration-300"></i>
+                            </div>
+                        </div>
+                    </div>
+                </button>
+                <div id="candidate-options" class="hidden mt-2 overflow-hidden transition-all duration-300">
+                    <div class="bg-slate-900/50 rounded-2xl p-4 border border-gold-500/20 space-y-3">
+                        <button onclick="switchView('candidate-reg')" class="w-full py-4 bg-gold-600/20 hover:bg-gold-600/40 text-gold-400 text-xs font-black rounded-xl uppercase tracking-wider transition flex items-center justify-center gap-2">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i> Register as Candidate
+                        </button>
+                        <button onclick="switchView('candidate-login')" class="w-full py-4 bg-gold-600/20 hover:bg-gold-600/40 text-gold-400 text-xs font-black rounded-xl uppercase tracking-wider transition flex items-center justify-center gap-2">
+                            <i data-lucide="log-in" class="w-4 h-4"></i> Candidate Login
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-8 text-center">
+                <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span id="mini-counter" class="text-xs font-black uppercase text-slate-300 tracking-widest">0 Votes Cast</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: VOTER REGISTRATION -->
+        <section id="view-voter-reg" class="hidden fade-in">
+            <button onclick="switchView('landing')" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-3 h-3"></i> Back
+            </button>
+            <div class="moving-border-blue p-[1.5px] rounded-[2.5rem]">
+                <div class="bg-slate-900 rounded-[2.4rem] p-8 relative z-10">
+                    <h2 class="text-xl font-black text-white uppercase tracking-widest text-center mb-2">Voter Registration</h2>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest text-center mb-8">Get your secure election ID</p>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2">Full Facebook Name</label>
+                            <div class="input-group mt-1">
+                                <i data-lucide="user" class="w-4 h-4 text-blue-400"></i>
+                                <input type="text" id="voterName" placeholder="e.g. your facebook name" class="custom-input pl-10">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2">Facebook Profile URL</label>
+                            <div class="input-group mt-1">
+                                <i data-lucide="facebook" class="w-4 h-4 text-blue-600"></i>
+                                <input type="url" id="voterLink" placeholder="https://www.facebook.com/username" class="custom-input pl-10">
+                            </div>
+                            <p class="text-[10px] text-slate-600 mt-1 font-bold">Must start with https://www.facebook.com/</p>
+                        </div>
+                        <button onclick="registerVoter()" class="btn-primary w-full mt-6 bg-blue-600 text-white shadow-lg shadow-blue-900/20">Generate My Election ID</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 3: VOTER LOGIN -->
+        <section id="view-voter-login" class="hidden fade-in">
+            <button onclick="switchView('landing')" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-3 h-3"></i> Back
+            </button>
+            <div class="moving-border-blue p-[1.5px] rounded-[2.5rem]">
+                <div class="bg-slate-900 rounded-[2.4rem] p-8 relative z-10">
+                    <div class="text-center mb-6">
+                        <i data-lucide="log-in" class="w-12 h-12 text-blue-400 mx-auto mb-3"></i>
+                        <h2 class="text-xl font-black text-white uppercase tracking-widest">Voter Login</h2>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Enter your Election ID</p>
+                    </div>
+                    <input type="text" id="voterLoginID" placeholder="e.g. SLC1234A" class="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-center text-lg font-black text-blue-400 uppercase tracking-widest outline-none focus:border-blue-500 mb-6">
+                    <button onclick="voterLogin()" class="w-full py-4 bg-blue-600 rounded-2xl text-xs font-black text-white uppercase shadow-lg shadow-blue-900/20">Access Dashboard</button>
+                    <p class="text-[10px] text-slate-600 text-center mt-4">Don't have an ID? <button onclick="switchView('voter-reg')" class="text-blue-400 underline">Register</button></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 4: CANDIDATE REGISTRATION -->
+        <section id="view-candidate-reg" class="hidden fade-in">
+            <button onclick="switchView('landing')" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-3 h-3"></i> Back
+            </button>
+            <div class="moving-border-gold p-[1.5px] rounded-[2.5rem]">
+                <div class="bg-slate-900 rounded-[2.4rem] p-8 relative z-10">
+                    <h2 class="text-xl font-black text-white uppercase tracking-widest text-center mb-2">Candidate Nomination</h2>
+                    <p class="text-xs text-slate-500 font-bold uppercase tracking-widest text-center mb-6">Enter the race</p>
+
+                    <div class="space-y-5">
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2">Full Facebook Name</label>
+                            <div class="input-group mt-1">
+                                <i data-lucide="user" class="w-4 h-4 text-gold-500"></i>
+                                <input type="text" id="candName" placeholder="e.g. your facebook name" class="custom-input pl-10">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2">Facebook Profile URL</label>
+                            <div class="input-group mt-1">
+                                <i data-lucide="facebook" class="w-4 h-4 text-blue-600"></i>
+                                <input type="url" id="candFbLink" placeholder="https://www.facebook.com/username" class="custom-input pl-10">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2">Profile Photo</label>
+                            <div class="bg-slate-950 border border-white/10 rounded-2xl p-5 mt-2">
+                                <p class="text-[10px] font-black text-slate-400 uppercase mb-3 flex items-center gap-2">
+                                    <i data-lucide="image" class="w-3 h-3 text-blue-400"></i> Photo Instructions
+                                </p>
+                                <ol class="text-[10px] text-slate-500 mb-4 space-y-1.5 list-decimal pl-4 font-bold">
+                                    <li>Visit <a href="https://postimages.org" target="_blank" class="text-blue-400 underline decoration-dotted">postimages.org</a> and upload photo.</li>
+                                    <li>Copy the <span class="text-emerald-500">"Direct Link"</span>.</li>
+                                    <li>Paste the direct link below.</li>
+                                </ol>
+                                <input type="url" id="candImage" placeholder="Paste direct link here..." class="w-full bg-slate-900 border border-white/10 rounded-xl p-3 text-xs text-white outline-none focus:border-gold-500">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider ml-2">Target Position</label>
+                            <select id="candRole" class="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-sm font-bold text-white outline-none focus:border-gold-500 mt-1">
+                                <option value="President">President</option>
+                                <option value="Vice-President">Vice-President</option>
+                                <option value="Tournament Manager">Tournament Manager</option>
+                                <option value="Recruitment Manager">Recruitment Manager</option>
+                                <option value="Disciplinary Manager">Disciplinary Manager</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between items-center">
+                                <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Campaign Symbol</label>
+                                <button onclick="refreshSymbols()" class="text-[10px] font-bold text-blue-400 hover:text-white transition">↻ Refresh</button>
+                            </div>
+                            <div id="symbolGrid" class="grid grid-cols-5 gap-2 mt-3 p-2 bg-slate-950/50 rounded-2xl border border-white/5 max-h-[200px] overflow-y-auto custom-scrollbar"></div>
+                            <p class="text-[10px] text-slate-600 font-bold mt-2">Pick one that represents you</p>
+                        </div>
+
+                        <button onclick="registerCandidate()" class="btn-primary w-full mt-4 bg-gold-600 text-white shadow-lg shadow-gold-900/20">Submit Nomination</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 5: CANDIDATE LOGIN -->
+        <section id="view-candidate-login" class="hidden fade-in">
+            <button onclick="switchView('landing')" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-3 h-3"></i> Back
+            </button>
+            <div class="moving-border-gold p-[1.5px] rounded-[2.5rem]">
+                <div class="bg-slate-900 rounded-[2.4rem] p-8 relative z-10">
+                    <div class="text-center mb-6">
+                        <i data-lucide="log-in" class="w-12 h-12 text-gold-400 mx-auto mb-3"></i>
+                        <h2 class="text-xl font-black text-white uppercase tracking-widest">Candidate Login</h2>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Enter your Election ID</p>
+                    </div>
+                    <input type="text" id="candidateLoginID" placeholder="e.g. SLC1234A" class="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-center text-lg font-black text-gold-400 uppercase tracking-widest outline-none focus:border-gold-500 mb-6">
+                    <button onclick="candidateLogin()" class="w-full py-4 bg-gold-600 rounded-2xl text-xs font-black text-white uppercase shadow-lg shadow-gold-900/20">Access Dashboard</button>
+                    <p class="text-[10px] text-slate-600 text-center mt-4">Don't have an ID? <button onclick="switchView('candidate-reg')" class="text-gold-400 underline">Register</button></p>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 6: ID DISPLAY -->
+        <section id="view-id-display" class="hidden fade-in pt-6 text-center">
+            <div class="w-24 h-24 mx-auto mb-6 relative">
+                <div class="absolute inset-0 bg-emerald-500/20 blur-2xl rounded-full animate-pulse"></div>
+                <div class="moving-border-emerald rounded-full p-[2px] w-full h-full relative z-10">
+                    <div class="bg-slate-900 rounded-full w-full h-full flex items-center justify-center overflow-hidden border-4 border-slate-900">
+                        <img src="logo.png" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150/0f172a/10b981?text=SLC'">
+                    </div>
+                </div>
+            </div>
+            
+            <h2 class="text-xl font-black text-white uppercase tracking-widest">Welcome, <span id="displayName"></span></h2>
+            <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-6">Your unique election ID</p>
+
+            <div class="moving-border-emerald p-[1.5px] rounded-[2rem] w-full max-w-xs mx-auto mb-6">
+                <div class="bg-slate-900 rounded-[1.9rem] p-8 relative z-10">
+                    <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-2">OFFICIAL ID</p>
+                    <h1 id="generated-id-display" class="text-4xl font-black text-white font-mono tracking-widest drop-shadow-[0_0_15px_rgba(16,185,129,0.5)] select-all">---</h1>
+                    <button onclick="copyID()" class="mt-4 text-xs text-slate-400 hover:text-white flex items-center justify-center gap-1 mx-auto">
+                        <i data-lucide="copy" class="w-3 h-3"></i> Copy ID
+                    </button>
+                </div>
+            </div>
+
+            <button id="id-next-btn" onclick="handleIDNext()" class="w-full max-w-xs mx-auto py-4 bg-emerald-600 text-white text-xs font-black rounded-2xl uppercase tracking-[0.2em] shadow-lg shadow-emerald-900/30 hover:scale-[1.02] transition-transform">
+                Go to Dashboard
+            </button>
+        </section>
+
+        <!-- VIEW 7: VOTER DASHBOARD -->
+        <section id="view-voter-dashboard" class="hidden fade-in pt-4">
+            <button onclick="logout()" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                <i data-lucide="log-out" class="w-3 h-3"></i> Logout
+            </button>
+            
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-black text-white uppercase tracking-widest">Voter Dashboard</h2>
+                <p id="voter-dashboard-name" class="text-sm text-emerald-400 font-bold uppercase mt-1"></p>
+            </div>
+
+            <!-- Live vote count -->
+            <div class="moving-border-blue p-[1.5px] rounded-[2rem] mb-6">
+                <div class="bg-slate-900 rounded-[1.9rem] p-6 text-center relative z-10">
+                    <p class="text-xs font-black text-blue-400 uppercase tracking-[0.2em]">Total Votes Cast</p>
+                    <h2 id="voter-dashboard-votes" class="text-5xl font-black text-white mt-2">0</h2>
+                </div>
+            </div>
+
+            <!-- Countdown Timer -->
+            <div class="bg-slate-900/50 rounded-2xl p-6 border border-white/5 mb-6 text-center">
+                <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Voting Period</p>
+                <div id="countdown-timer" class="text-2xl font-black text-gold-400">-- : -- : --</div>
+                <p id="countdown-label" class="text-[10px] text-slate-500 mt-2 uppercase font-bold"></p>
+            </div>
+
+            <!-- Action Button -->
+            <div id="voter-action-area" class="text-center"></div>
+
+            <!-- Results -->
+            <div id="voter-results-area" class="hidden mt-8 space-y-6">
+                <h3 class="text-lg font-black text-gold-400 uppercase tracking-widest text-center">Election Results</h3>
+                <div id="voter-winners-list" class="space-y-4"></div>
+            </div>
+        </section>
+
+        <!-- VIEW 8: CANDIDATE DASHBOARD -->
+        <section id="view-candidate-dashboard" class="hidden fade-in pt-4">
+            <button onclick="logout()" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                <i data-lucide="log-out" class="w-3 h-3"></i> Logout
+            </button>
+            
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-black text-white uppercase tracking-widest">Candidate Dashboard</h2>
+                <p id="candidate-dashboard-name" class="text-sm text-gold-400 font-bold uppercase mt-1"></p>
+                <p id="candidate-dashboard-id" class="text-xs text-slate-500 mt-2">ID: <span class="font-mono"></span></p>
+            </div>
+
+            <!-- Nomination Card Actions -->
+            <div class="space-y-4">
+                <button onclick="previewNominationCard()" class="w-full py-4 bg-white/5 border border-white/10 text-gold-500 text-xs font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                    <i data-lucide="eye" class="w-4 h-4"></i> Preview Nomination Card
+                </button>
+                <button onclick="downloadNominationCard()" class="w-full py-4 bg-gold-600 text-white text-xs font-black rounded-2xl uppercase tracking-[0.2em] shadow-lg shadow-gold-900/30 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
+                    <i data-lucide="download" class="w-4 h-4"></i> Download Nomination Card
+                </button>
+            </div>
+
+            <!-- Live vote count -->
+            <div class="mt-8 moving-border-gold p-[1.5px] rounded-[2rem]">
+                <div class="bg-slate-900 rounded-[1.9rem] p-6 text-center relative z-10">
+                    <p class="text-xs font-black text-gold-400 uppercase tracking-[0.2em]">Total Votes Cast</p>
+                    <h2 id="candidate-dashboard-votes" class="text-5xl font-black text-white mt-2">0</h2>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 9: VOTING BOOTH -->
+        <section id="view-booth" class="hidden fade-in relative">
+            <!-- NEW: Watermark Overlay for Booth -->
+            <div class="absolute inset-0 watermark-fingerprint pointer-events-none z-0"></div>
+
+            <div class="flex items-center justify-between mb-6 relative z-10">
+                <button onclick="switchView('voter-dashboard')" class="flex items-center gap-1 text-xs text-slate-500 hover:text-white"><i data-lucide="arrow-left" class="w-4 h-4"></i> Dashboard</button>
+                <div class="px-4 py-2 bg-slate-900 border border-white/10 rounded-full">
+                    <span id="booth-user-name" class="text-xs font-black text-slate-300 uppercase"></span>
+                </div>
+            </div>
+            <h2 class="text-2xl font-black uppercase tracking-widest text-white mb-2 relative z-10">Cast Your Vote</h2>
+            <p class="text-xs text-emerald-400 font-bold uppercase tracking-widest mb-8 relative z-10">Select one candidate per position</p>
+
+            <div id="ballot-container" class="space-y-12 pb-32 relative z-10"></div>
+
+            <!-- Fixed submit button -->
+            <div class="fixed bottom-6 left-5 right-5 max-w-[460px] mx-auto z-50">
+                <button onclick="openVoteConfirmModal()" class="w-full py-4 bg-emerald-600 text-white font-black uppercase tracking-[0.2em] text-sm rounded-2xl shadow-2xl shadow-emerald-900/50 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-3">
+                    <i data-lucide="send" class="w-4 h-4"></i> Submit Final Ballot
+                </button>
+            </div>
+        </section>
+
+        <!-- VIEW 10: PUBLIC DASHBOARD / RESULTS -->
+        <section id="view-dashboard" class="hidden fade-in pt-4">
+            <button onclick="switchView('landing')" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
+                <i data-lucide="arrow-left" class="w-3 h-3"></i> Home
+            </button>
+            
+            <div class="moving-border-blue p-[1.5px] rounded-[2.5rem] mb-8">
+                <div class="bg-slate-900 rounded-[2.4rem] p-10 text-center relative z-10">
+                    <p class="text-xs font-black text-blue-400 uppercase tracking-[0.3em] mb-4">Total Votes Cast</p>
+                    <h1 id="dashboard-total-votes" class="text-7xl font-black text-white tracking-tighter mb-4 drop-shadow-2xl">0</h1>
+                    <div class="flex justify-center items-center gap-2">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span id="election-status-indicator" class="text-xs font-bold text-slate-400 uppercase tracking-widest">Polling Active</span>
+                    </div>
+                </div>
+            </div>
+
+            <div id="results-area" class="hidden space-y-8 pb-20">
+                <div class="text-center mb-6">
+                    <i data-lucide="trophy" class="w-12 h-12 text-gold-400 mx-auto mb-3"></i>
+                    <h2 class="text-2xl font-black text-white uppercase tracking-[0.2em]">Official Results</h2>
+                </div>
+                <div id="winners-list" class="space-y-4"></div>
+            </div>
+            <div id="results-locked-msg" class="text-center py-20 opacity-70">
+                <div class="w-20 h-20 bg-slate-900 rounded-full border border-white/10 flex items-center justify-center mx-auto mb-4">
+                    <i data-lucide="lock" class="w-8 h-8 text-slate-500"></i>
+                </div>
+                <p class="text-sm font-black text-slate-500 uppercase tracking-[0.2em]">Results sealed until deadline</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- MODAL: Confirm Vote -->
+    <div id="modal-confirm-vote" class="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-6">
+        <div class="moving-border-emerald p-[1.5px] rounded-[2.5rem] w-full max-w-sm">
+            <div class="bg-slate-900 rounded-[2.4rem] p-8 text-center relative z-10">
+                <i data-lucide="shield-check" class="w-12 h-12 text-emerald-400 mx-auto mb-4"></i>
+                <h3 class="text-lg font-black text-white uppercase tracking-widest mb-2">Confirm Your Identity</h3>
+                <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4">Your ID: <span id="modal-current-id" class="text-emerald-400"></span></p>
+                <input type="text" id="confirmID" placeholder="Type your ID to confirm" class="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-center text-lg font-black text-emerald-400 uppercase tracking-widest outline-none focus:border-emerald-500 mb-6">
+                <div class="flex gap-3">
+                    <button onclick="closeModal('modal-confirm-vote')" class="flex-1 py-4 bg-slate-800 rounded-2xl text-xs font-black text-slate-400 uppercase">Cancel</button>
+                    <button id="btn-final-cast" onclick="submitFinalVote()" class="flex-[2] py-4 bg-emerald-600 rounded-2xl text-xs font-black text-white uppercase shadow-lg shadow-emerald-900/20">Verify & Cast</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: Nomination Card Preview -->
+    <div id="modal-preview-card" class="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-4">
+        <div class="relative max-w-md w-full">
+            <button onclick="closeModal('modal-preview-card')" class="absolute -top-2 -right-2 z-10 w-10 h-10 bg-slate-800 rounded-full border border-white/10 flex items-center justify-center hover:bg-slate-700">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <div id="preview-card-container" class="scale-75 origin-top"></div>
+        </div>
+    </div>
+
+    <!-- MODAL: Admin Login & Dashboard -->
+    <div id="modal-admin" class="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-6">
+        <div class="moving-border-gold p-[1.5px] rounded-[2.5rem] w-full max-w-md">
+            <div class="bg-slate-900 rounded-[2.4rem] p-8 relative z-10">
+                <!-- Login View -->
+                <div id="admin-login-view">
+                    <div class="text-center mb-6">
+                        <i data-lucide="shield" class="w-12 h-12 text-gold-400 mx-auto mb-3"></i>
+                        <h3 class="text-xl font-black text-white uppercase tracking-widest">Admin Access</h3>
+                        <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mt-1">Enter passkey</p>
+                    </div>
+                    <input type="password" id="adminKey" placeholder="••••" class="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-center text-2xl font-black text-gold-400 uppercase tracking-widest outline-none focus:border-gold-500 mb-6">
+                    <button onclick="verifyAdmin()" class="w-full py-4 bg-gold-600 rounded-2xl text-xs font-black text-white uppercase shadow-lg shadow-gold-900/20">Unlock Dashboard</button>
+                </div>
+
+                <!-- Dashboard View -->
+                <div id="admin-dashboard-view" class="hidden">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-black text-white uppercase tracking-widest">Admin</h3>
+                        <button onclick="closeModal('modal-admin')" class="p-2 hover:bg-white/5 rounded-lg">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                    <div class="space-y-4 max-h-[70vh] overflow-y-auto custom-scrollbar pr-2">
+                        <div class="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
+                            <p class="text-xs text-slate-400 uppercase tracking-wider">Total Votes Cast</p>
+                            <p id="admin-total-votes" class="text-3xl font-black text-white">0</p>
+                        </div>
+
+                        <!-- Voting Period Settings -->
+                        <div class="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
+                            <p class="text-xs text-slate-400 uppercase tracking-wider mb-3">Voting Period</p>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase">Start</label>
+                                    <input type="datetime-local" id="votingStart" class="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-xs text-white">
+                                </div>
+                                <div>
+                                    <label class="text-[10px] font-bold text-slate-500 uppercase">End</label>
+                                    <input type="datetime-local" id="votingEnd" class="w-full bg-slate-950 border border-white/10 rounded-xl p-3 text-xs text-white">
+                                </div>
+                                <button onclick="saveVotingPeriod()" class="w-full py-2 bg-blue-600 rounded-xl text-xs font-black uppercase">Save Period</button>
+                            </div>
+                        </div>
+
+                        <div class="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
+                            <p class="text-xs text-slate-400 uppercase tracking-wider mb-3">Candidate Standings</p>
+                            <div id="admin-candidate-list" class="space-y-2 text-xs"></div>
+                        </div>
+
+                        <button onclick="revealResults()" class="w-full py-3 bg-emerald-600 rounded-xl text-xs font-black text-white uppercase tracking-wider flex items-center justify-center gap-2">
+                            <i data-lucide="eye" class="w-4 h-4"></i> Publish Results
+                        </button>
+                        <button onclick="downloadResultsImage()" class="w-full py-3 bg-blue-600 rounded-xl text-xs font-black text-white uppercase tracking-wider flex items-center justify-center gap-2">
+                            <i data-lucide="image" class="w-4 h-4"></i> Download Results Image
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Export Card for Results Image -->
+    <div id="export-card" class="fixed top-0 left-[-9999px] w-[400px] bg-slate-950 p-6 border-4 border-gold-500 rounded-3xl z-[9999]">
+        <div class="text-center mb-4">
+            <img src="logo.png" class="w-12 h-12 mx-auto mb-2" onerror="this.style.display='none'">
+            <h2 class="text-xl font-black text-white uppercase tracking-widest">Election Results</h2>
+            <p class="text-[10px] text-gold-400 font-bold uppercase tracking-[0.3em]">SLC 2025</p>
+        </div>
+        <div id="export-candidates" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar"></div>
+        <p class="text-[8px] text-slate-500 text-center mt-4">Verified by SLC Protocol</p>
+    </div>
+
+<!-- NOMINATION CARD CONTAINER -->
+<div id="nomination-card-container" class="fixed top-0 left-[-9999px] z-[9999]">
+    <!-- Card Dimensions: 450px x 800px (9:16 Ratio) -->
+    <div id="nomination-card" class="w-[450px] h-[800px] bg-slate-950 relative flex flex-col items-center justify-between py-10 overflow-hidden border-8 border-slate-900">
+        
+        <!-- Backgrounds -->
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black z-0"></div>
+        <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] z-0"></div>
+        
+        <!-- 1. HEADER: Dynamic Vote Title -->
+        <div class="relative z-10 w-full text-center mt-4">
+            <div class="flex items-center justify-center gap-2 mb-2 opacity-70">
+                <i data-lucide="shield-check" class="w-4 h-4 text-gold-400"></i>
+                <span class="text-[9px] font-bold text-gold-400 uppercase tracking-[0.3em]">Official Nominee</span>
+            </div>
+            <h1 class="text-[6rem] leading-[0.8] font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-200 to-slate-500 drop-shadow-2xl transform -skew-x-6">
+                VOTE
+            </h1>
+        </div>
+
+        <!-- 2. PHOTO: Circular Premium Frame -->
+        <div class="relative z-10">
+            <!-- Animated Glow Ring -->
+            <div class="absolute inset-0 rounded-full border border-gold-500/30 scale-110 animate-pulse"></div>
+            <!-- Main Photo Circle -->
+            <div class="w-64 h-64 rounded-full p-1 bg-gradient-to-tr from-gold-600 via-gold-300 to-gold-600 shadow-[0_0_60px_rgba(234,179,8,0.2)]">
+                <div class="w-full h-full rounded-full overflow-hidden border-4 border-slate-900 bg-slate-800 relative">
+                     <img id="card-cand-img" src="" class="w-full h-full object-cover" crossorigin="anonymous">
+                </div>
+            </div>
+            <!-- Verified Checkmark -->
+            <div class="absolute bottom-2 right-4 bg-blue-600 text-white p-2 rounded-full border-[5px] border-slate-950 shadow-lg">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            </div>
+        </div>
+
+        <!-- 3. INFO: Name & Role -->
+        <div class="relative z-10 text-center w-full px-4 -mt-4">
+            <h2 id="card-cand-name" class="text-4xl font-black text-white uppercase tracking-tighter drop-shadow-lg mb-2">
+                CANDIDATE NAME
+            </h2>
+            <div class="inline-block bg-slate-900/80 border border-emerald-500/30 px-6 py-2 rounded-full backdrop-blur-md">
+                <p id="card-cand-role" class="text-xs font-black text-emerald-400 uppercase tracking-[0.25em]">POSITION NAME</p>
+            </div>
+        </div>
+
+        <!-- 4. SYMBOL SECTION: Updated "Premium Ribbon" Design -->
+        <div class="relative z-10 w-full mt-2">
+            <!-- Gold Borders & Gradient -->
+            <div class="w-full py-5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-y border-gold-500/50 flex items-center justify-between px-8 relative overflow-hidden">
+                
+                <!-- Background Glow behind Ribbon -->
+                <div class="absolute inset-0 bg-gold-500/5 pointer-events-none"></div>
+                
+                <!-- Left: Label -->
+                <div class="flex-1 text-right pr-6 border-r border-white/10">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Your Symbol</p>
+                    <p class="text-xs font-black text-white uppercase tracking-widest">ON BALLOT</p>
+                </div>
+
+                <!-- Center: The Icon (Star of the show) -->
+                <div class="relative z-20 mx-4">
+                    <div class="absolute inset-0 bg-gold-500/20 blur-xl rounded-full"></div>
+                    <div id="card-cand-symbol-icon" class="relative w-16 h-16 text-gold-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]">
+                        <!-- Icon injected here -->
+                    </div>
+                </div>
+
+                <!-- Right: Symbol Name -->
+                <div class="flex-1 text-left pl-6 border-l border-white/10">
+                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Look For</p>
+                    <p id="card-cand-symbol-text" class="text-xl font-black text-gold-400 uppercase tracking-wider italic">ANCHOR</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. FOOTER -->
+        <div class="relative z-10 w-full px-8 pb-4 text-center">
+            <div class="w-full py-4 bg-gold-600 rounded-xl shadow-[0_5px_20px_rgba(234,179,8,0.15)] mb-3">
+                <p class="text-[11px] font-black text-slate-950 uppercase tracking-[0.3em]">YOUR VOICE • YOUR CHOICE</p>
+            </div>
+            <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest">SLC Secure Election Protocol 2026</p>
+        </div>
+
+    </div>
+</div>
+
+    <script src="script.js"></script>
+</body>
+</html>
