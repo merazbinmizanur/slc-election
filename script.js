@@ -23,7 +23,7 @@ const POSITIONS = ["President", "Vice-President", "Tournament Manager", "Recruit
 // Global state
 let currentID = null;
 let currentName = null;
-let currentRole = null; // 'voter' or 'candidate'
+let currentRole = null; 
 let currentCandidateData = null;
 let selectedVotes = {};
 let selectedSymbol = "";
@@ -74,6 +74,12 @@ function copyID() {
     navigator.clipboard.writeText(id).then(() => notify("ID copied!", "copy"));
 }
 
+function copyDashboardID() {
+    if(currentID) {
+        navigator.clipboard.writeText(currentID).then(() => notify("ID copied!", "copy"));
+    }
+}
+
 function logout() {
     currentID = null;
     currentName = null;
@@ -110,32 +116,26 @@ function selectSymbol(s, el) {
     el.classList.add('selected');
 }
 
-// ---------- VOTER REGISTRATION (with duplicate check) ----------
+// ---------- VOTER REGISTRATION ----------
 async function registerVoter() {
     const name = document.getElementById('voterName').value.trim();
     const link = document.getElementById('voterLink').value.trim();
 
     if (!name) return notify("Please enter your full Facebook name", "alert-circle");
     if (!link) return notify("Facebook profile link is required", "alert-circle");
-    if (!isValidFacebookUrl(link)) return notify("Invalid Facebook URL (must start with https://www.facebook.com/)", "alert-circle");
+    if (!isValidFacebookUrl(link)) return notify("Invalid Facebook URL", "alert-circle");
 
-    // Check if Facebook link already registered
     const existing = await db.collection("voters").where("link", "==", link).get();
     if (!existing.empty) {
-        notify("This Facebook account is already registered. Please login with your ID.", "info");
+        notify("Account already registered. Please login.", "info");
         return;
     }
 
     const newID = generateElectionID();
     try {
         await db.collection("voters").doc(newID).set({
-            name,
-            link,
-            role: "voter",
-            hasVoted: false,
-            timestamp: Date.now()
+            name, link, role: "voter", hasVoted: false, timestamp: Date.now()
         });
-
         currentID = newID;
         currentName = name;
         currentRole = 'voter';
@@ -155,37 +155,33 @@ async function voterLogin() {
 
     try {
         const doc = await db.collection("voters").doc(id).get();
-        if (!doc.exists) return notify("ID not found. Please register first.", "alert-circle");
-
+        if (!doc.exists) return notify("ID not found.", "alert-circle");
         const data = doc.data();
-        if (data.role !== 'voter') return notify("This ID belongs to a candidate. Use candidate login.", "alert-circle");
+        if (data.role !== 'voter') return notify("Use candidate login.", "alert-circle");
 
         currentID = id;
         currentName = data.name;
         currentRole = 'voter';
-
         await loadVoterDashboard();
         switchView('voter-dashboard');
     } catch (e) {
-        notify("Login error. Check connection.", "alert-circle");
+        notify("Login error.", "alert-circle");
     }
 }
 
 // ---------- VOTER DASHBOARD ----------
 async function loadVoterDashboard() {
     document.getElementById('voter-dashboard-name').innerText = currentName;
+    document.getElementById('voter-dashboard-id-display').innerText = currentID;
 
-    // Listen to global vote count
     db.collection("settings").doc("global").onSnapshot((doc) => {
         if (doc.exists) {
             document.getElementById('voter-dashboard-votes').innerText = doc.data().totalVotesCast || 0;
         }
     });
 
-    // Load voting period and start countdown
     loadVotingPeriodForVoter();
 
-    // Check if results are published
     const globalDoc = await db.collection("settings").doc("global").get();
     if (globalDoc.exists && globalDoc.data().resultsRevealed) {
         showVoterResults();
@@ -211,7 +207,7 @@ function updateCountdown(start, end, now) {
     const labelEl = document.getElementById('countdown-label');
     const actionArea = document.getElementById('voter-action-area');
     
-    if(!timerEl || !labelEl || !actionArea) return; // Safety check
+    if(!timerEl || !labelEl || !actionArea) return; 
 
     if (!start || !end) {
         timerEl.innerText = '-- : -- : --';
@@ -221,7 +217,6 @@ function updateCountdown(start, end, now) {
     }
 
     if (now < start) {
-        // Before start
         const diff = start - now;
         const days = Math.floor(diff / (1000 * 60 * 60 * 24));
         const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
@@ -233,19 +228,16 @@ function updateCountdown(start, end, now) {
              actionArea.innerHTML = `<p class="text-sm text-slate-400">Voting not yet started</p>`;
         }
     } else if (now >= start && now <= end) {
-        // During voting
         const diff = end - now;
         const hours = Math.floor(diff / (1000 * 60 * 60));
         const minutes = Math.floor((diff / (1000 * 60)) % 60);
         const seconds = Math.floor((diff / 1000) % 60);
         timerEl.innerText = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
         labelEl.innerText = 'Voting ends in';
-        // Only update innerHTML if it doesn't already have the button to prevent button reset
         if(actionArea.innerHTML.indexOf("enterBooth") === -1) {
             actionArea.innerHTML = `<button onclick="enterBooth()" class="w-full py-4 bg-emerald-600 text-white text-xs font-black rounded-2xl uppercase tracking-[0.2em] shadow-lg shadow-emerald-900/30 hover:scale-[1.02] transition-transform">Go to Voting Booth</button>`;
         }
     } else if (now > end) {
-        // After end
         timerEl.innerText = '00:00:00';
         labelEl.innerText = 'Voting ended';
          if(actionArea.innerHTML.indexOf("Voting period has ended") === -1) {
@@ -284,7 +276,7 @@ async function showVoterResults() {
     if(list) list.innerHTML = html;
 }
 
-// ---------- CANDIDATE REGISTRATION (with Facebook link) ----------
+// ---------- CANDIDATE REGISTRATION ----------
 async function registerCandidate() {
     const name = document.getElementById('candName').value.trim();
     const fbLink = document.getElementById('candFbLink').value.trim();
@@ -297,57 +289,36 @@ async function registerCandidate() {
     if (!image) return notify("Please paste the direct photo link", "alert-circle");
     if (!selectedSymbol) return notify("Please select a symbol", "alert-circle");
 
-    // Check if Facebook link already registered (in voters collection)
     const existing = await db.collection("voters").where("link", "==", fbLink).get();
     if (!existing.empty) {
-        notify("This Facebook account is already registered. Please use a different account.", "alert-circle");
+        notify("Account already registered.", "alert-circle");
         return;
     }
 
-    // Check symbol availability
     const check = await db.collection("candidates").where("symbol", "==", selectedSymbol).get();
     if (!check.empty) return notify("Symbol just taken! Pick another.", "alert-circle");
 
     const newID = generateElectionID();
     try {
         const batch = db.batch();
-        const candRef = db.collection("candidates").doc();
-        batch.set(candRef, {
-            name,
-            image,
-            position: role,
-            symbol: selectedSymbol,
-            voteCount: 0
+        batch.set(db.collection("candidates").doc(), {
+            name, image, position: role, symbol: selectedSymbol, voteCount: 0
         });
-
-        const voterRef = db.collection("voters").doc(newID);
-        batch.set(voterRef, {
-            name,
-            link: fbLink,
-            role: "candidate",
-            hasVoted: false,
-            timestamp: Date.now()
+        batch.set(db.collection("voters").doc(newID), {
+            name, link: fbLink, role: "candidate", hasVoted: false, timestamp: Date.now()
         });
-
         await batch.commit();
 
         currentID = newID;
         currentName = name;
         currentRole = 'candidate';
         currentCandidateData = { name, image, position: role, symbol: selectedSymbol };
-
         document.getElementById('generated-id-display').innerText = newID;
         document.getElementById('displayName').innerText = name;
         document.getElementById('id-next-btn').innerText = 'Go to Dashboard';
         switchView('id-display');
-
-        // Reset form
-        document.getElementById('candName').value = '';
-        document.getElementById('candFbLink').value = '';
-        document.getElementById('candImage').value = '';
-        selectedSymbol = '';
     } catch (e) {
-        notify("Registration failed. Try again.", "alert-circle");
+        notify("Registration failed.", "alert-circle");
     }
 }
 
@@ -358,17 +329,13 @@ async function candidateLogin() {
 
     try {
         const doc = await db.collection("voters").doc(id).get();
-        if (!doc.exists) return notify("ID not found. Please register first.", "alert-circle");
-
+        if (!doc.exists) return notify("ID not found.", "alert-circle");
         const data = doc.data();
-        if (data.role !== 'candidate') return notify("This ID belongs to a voter. Use voter login.", "alert-circle");
+        if (data.role !== 'candidate') return notify("Use voter login.", "alert-circle");
 
-        // Fetch candidate details
         const candidatesSnap = await db.collection("candidates").where("name", "==", data.name).get();
         let candidateData = null;
-        candidatesSnap.forEach(doc => {
-            candidateData = { id: doc.id, ...doc.data() };
-        });
+        candidatesSnap.forEach(doc => { candidateData = { id: doc.id, ...doc.data() }; });
 
         if (!candidateData) return notify("Candidate record not found.", "alert-circle");
 
@@ -376,11 +343,10 @@ async function candidateLogin() {
         currentName = data.name;
         currentRole = 'candidate';
         currentCandidateData = candidateData;
-
         await loadCandidateDashboard();
         switchView('candidate-dashboard');
     } catch (e) {
-        notify("Login error. Check connection.", "alert-circle");
+        notify("Login error.", "alert-circle");
     }
 }
 
@@ -388,8 +354,6 @@ async function candidateLogin() {
 async function loadCandidateDashboard() {
     document.getElementById('candidate-dashboard-name').innerText = currentName;
     document.getElementById('candidate-dashboard-id').querySelector('span').innerText = currentID;
-
-    // Live vote count
     db.collection("settings").doc("global").onSnapshot((doc) => {
         if (doc.exists) {
             document.getElementById('candidate-dashboard-votes').innerText = doc.data().totalVotesCast || 0;
@@ -397,37 +361,54 @@ async function loadCandidateDashboard() {
     });
 }
 
-// ---------- NOMINATION CARD (Preview & Download) ----------
-/* IN SCRIPT.JS - REPLACE previewNominationCard FUNCTION */
+// ---------- CARD UPDATE LOGIC ----------
+function updateNominationCard() {
+    if (!currentCandidateData) return;
+    
+    // Name - Auto resize logic for Square Card (max width constrained)
+    const nameEl = document.getElementById('card-cand-name');
+    nameEl.innerText = currentCandidateData.name;
+    nameEl.className = "font-black text-white uppercase tracking-tighter drop-shadow-lg leading-none mb-2";
+    
+    if (currentCandidateData.name.length > 15) {
+        nameEl.classList.add('text-2xl');
+    } else if (currentCandidateData.name.length > 10) {
+        nameEl.classList.add('text-3xl');
+    } else {
+        nameEl.classList.add('text-4xl');
+    }
+    
+    document.getElementById('card-cand-role').innerText = currentCandidateData.position;
+    
+    const imgEl = document.getElementById('card-cand-img');
+    imgEl.src = currentCandidateData.image;
+    
+    document.getElementById('card-cand-symbol-text').innerText = currentCandidateData.symbol.toUpperCase();
+    document.getElementById('card-cand-symbol-icon').innerHTML = `<i data-lucide="${currentCandidateData.symbol}" class="w-full h-full text-gold-400"></i>`;
+    lucide.createIcons();
+}
 
+// ---------- PREVIEW LOGIC (Scales down for phone view) ----------
 function previewNominationCard() {
     if (!currentCandidateData) return;
     
-    // 1. Update the hidden card data
     updateNominationCard();
     
-    // 2. Clear old preview
     const container = document.getElementById('preview-card-container');
     container.innerHTML = '';
     
-    // 3. Clone the card
     const original = document.getElementById('nomination-card');
     const clone = original.cloneNode(true);
     clone.id = 'preview-card';
     
-    // 4. Calculate Scale Factor
-    // The card is 450px wide. We check the user's screen width.
-    // If screen is 360px wide, we need to scale down to roughly 0.75
-    const cardWidth = 450;
-    // We assume the modal has some padding (e.g. 40px total)
-    const availableWidth = Math.min(window.innerWidth - 40, 400);
-    const scale = availableWidth / cardWidth;
+    // Square Scale Logic
+    const cardSize = 600;
+    const availableWidth = Math.min(window.innerWidth - 40, 350); // Max width for modal
+    const scale = availableWidth / cardSize;
     
-    // 5. Apply Styles for "Image-Like" Appearance
-    // We use a wrapper approach to handle the scaling cleanly
     const wrapper = document.createElement('div');
     wrapper.style.width = `${availableWidth}px`;
-    wrapper.style.height = `${800 * scale}px`; // Maintain aspect ratio
+    wrapper.style.height = `${availableWidth}px`; // Square ratio
     wrapper.style.overflow = 'hidden';
     wrapper.style.margin = '0 auto';
     wrapper.style.borderRadius = '16px';
@@ -435,77 +416,63 @@ function previewNominationCard() {
     
     clone.style.transform = `scale(${scale})`;
     clone.style.transformOrigin = 'top left';
-    clone.style.position = 'absolute'; // Remove from document flow inside wrapper
+    clone.style.position = 'absolute';
     clone.style.top = '0';
     clone.style.left = '0';
     
-    // Append clone to wrapper, wrapper to container
     wrapper.appendChild(clone);
     container.appendChild(wrapper);
     
-    // 6. Re-render icons
     lucide.createIcons();
-    
-    // 7. Open Modal
     openModal('modal-preview-card');
 }
 
+// ---------- DOWNLOAD LOGIC (Crystal Clear, No Fading) ----------
 function downloadNominationCard() {
     if (!currentCandidateData) return;
-    notify("Generating card...", "loader");
+    notify("Generating HQ card...", "loader");
     updateNominationCard();
 
     setTimeout(() => {
-        html2canvas(document.getElementById('nomination-card'), { scale: 2, backgroundColor: "#020617", useCORS: true }).then(canvas => {
-            const link = document.createElement("a");
-            link.download = `SLC-Nomination-${currentCandidateData.name}.png`;
-            link.href = canvas.toDataURL();
-            link.click();
-            notify("Card downloaded!", "check-circle");
-        });
-    }, 500);
-}
-
-/* IN SCRIPT.JS - REPLACE THE updateNominationCard FUNCTION */
-
-/* IN SCRIPT.JS - REPLACE downloadNominationCard FUNCTION */
-
-function downloadNominationCard() {
-    if (!currentCandidateData) return;
-    notify("Generating card...", "loader");
-    
-    // Ensure data is fresh
-    updateNominationCard();
-
-    // Small delay to ensure DOM is ready
-    setTimeout(() => {
-        const element = document.getElementById('nomination-card');
+        // Clone the card to the BODY (visible but hidden by z-index)
+        // This fixes the "blank/faded" issue caused by capturing hidden elements
+        const original = document.getElementById('nomination-card');
+        const clone = original.cloneNode(true);
         
-        // Configuration to force exact sizing and fix scroll issues
+        clone.id = "temp-download-card";
+        clone.style.position = "fixed";
+        clone.style.top = "0";
+        clone.style.left = "0";
+        clone.style.zIndex = "-9999"; // Behind everything
+        clone.style.visibility = "visible"; // Must be visible to browser engine
+        
+        document.body.appendChild(clone);
+
         const options = {
-            scale: 2, // High resolution
+            scale: 3, // 3x Resolution for Crystal Clear
             backgroundColor: "#020617",
-            useCORS: true, // Allow images
-            width: 450, // FORCE Exact width
-            height: 800, // FORCE Exact height
-            windowWidth: 450,
-            windowHeight: 800,
-            x: 0,
-            y: 0,
-            scrollY: -window.scrollY // Fixes shifting if user scrolled down
+            useCORS: true,
+            width: 600,
+            height: 600
         };
 
-        html2canvas(element, options).then(canvas => {
+        html2canvas(clone, options).then(canvas => {
             const link = document.createElement("a");
             link.download = `SLC-Nomination-${currentCandidateData.name}.png`;
             link.href = canvas.toDataURL("image/png");
             link.click();
+            
+            // Clean up
+            document.body.removeChild(clone);
             notify("Card downloaded!", "check-circle");
+        }).catch(err => {
+            console.error(err);
+            document.body.removeChild(clone);
+            notify("Download failed", "alert-circle");
         });
     }, 500);
 }
-
-// ---------- AFTER REGISTRATION: handle "Go to Dashboard" ----------
+// ---------- AFTER REGISTRATION ----------
 function handleIDNext() {
     if (currentRole === 'voter') {
         loadVoterDashboard();
@@ -618,11 +585,11 @@ async function submitFinalVote() {
     } catch (e) {
         btn.innerHTML = "Verify & Cast";
         btn.disabled = false;
-        notify(e === "Already Voted" ? "You have already voted!" : "Submission error. Check connection.", "alert-circle");
+        notify(e === "Already Voted" ? "You have already voted!" : "Submission error.", "alert-circle");
     }
 }
 
-// ---------- PUBLIC DASHBOARD (live counter & results) ----------
+// ---------- PUBLIC DASHBOARD ----------
 function listenToGlobalSettings() {
     db.collection("settings").doc("global").onSnapshot(doc => {
         if (doc.exists) {
@@ -684,7 +651,7 @@ function verifyAdmin() {
         loadAdminData();
         loadAdminVotingPeriod();
     } else {
-        notify("Access Denied: Invalid passkey", "lock");
+        notify("Access Denied", "lock");
     }
 }
 
@@ -712,31 +679,24 @@ async function loadAdminVotingPeriod() {
     const globalDoc = await db.collection("settings").doc("global").get();
     if (globalDoc.exists) {
         const data = globalDoc.data();
-        if (data.votingStart) {
-            document.getElementById('votingStart').value = data.votingStart.slice(0,16);
-        }
-        if (data.votingEnd) {
-            document.getElementById('votingEnd').value = data.votingEnd.slice(0,16);
-        }
+        if (data.votingStart) document.getElementById('votingStart').value = data.votingStart.slice(0,16);
+        if (data.votingEnd) document.getElementById('votingEnd').value = data.votingEnd.slice(0,16);
     }
 }
 
 function saveVotingPeriod() {
     const start = document.getElementById('votingStart').value;
     const end = document.getElementById('votingEnd').value;
-    if (!start || !end) return notify("Please set both start and end times", "alert-circle");
+    if (!start || !end) return notify("Set start and end times", "alert-circle");
 
     db.collection("settings").doc("global").set({
-        votingStart: start,
-        votingEnd: end
-    }, { merge: true }).then(() => {
-        notify("Voting period saved!", "check-circle");
-    }).catch(() => notify("Error saving", "alert-circle"));
+        votingStart: start, votingEnd: end
+    }, { merge: true }).then(() => notify("Period saved!", "check-circle"));
 }
 
 function revealResults() {
     db.collection("settings").doc("global").set({ resultsRevealed: true }, { merge: true });
-    notify("Results are now public!", "check-circle");
+    notify("Results Public!", "check-circle");
     closeModal('modal-admin');
 }
 
@@ -762,7 +722,6 @@ async function downloadResultsImage() {
     const card = document.getElementById('export-card');
     card.classList.remove('hidden');
     
-    // Ensure card is rendered before capturing
     setTimeout(() => {
         html2canvas(card, { scale: 2, backgroundColor: "#020617", useCORS: true }).then(canvas => {
             const link = document.createElement('a');
@@ -770,12 +729,11 @@ async function downloadResultsImage() {
             link.href = canvas.toDataURL();
             link.click();
             card.classList.add('hidden');
-            notify("Results image downloaded", "check-circle");
+            notify("Image downloaded", "check-circle");
         });
-    }, 500); // Increased timeout slightly to ensure DOM reflow
+    }, 500);
 }
 
-// Listen to voting period changes (for countdown)
 function listenToVotingPeriod() {
     db.collection("settings").doc("global").onSnapshot(() => {
         const dash = document.getElementById('view-voter-dashboard');
@@ -785,16 +743,12 @@ function listenToVotingPeriod() {
     });
 }
 
-// Toggle expandable sections on landing
 function toggleSection(section) {
     const options = document.getElementById(`${section}-options`);
     const chevron = document.getElementById(`${section}-chevron`);
-    
-    // Safety check if elements exist
     if(!options || !chevron) return;
 
     if (options.classList.contains('hidden')) {
-        // Close the other section first
         if (section === 'voter') {
             document.getElementById('candidate-options')?.classList.add('hidden');
             const candChevron = document.getElementById('candidate-chevron');
@@ -804,13 +758,11 @@ function toggleSection(section) {
             const voteChevron = document.getElementById('voter-chevron');
             if(voteChevron) voteChevron.style.transform = 'rotate(0deg)';
         }
-        
         options.classList.remove('hidden');
         chevron.style.transform = 'rotate(180deg)';
     } else {
         options.classList.add('hidden');
         chevron.style.transform = 'rotate(0deg)';
     }
-    
     lucide.createIcons();
-}
+    }
