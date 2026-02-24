@@ -560,86 +560,88 @@
 
 <!-- NOMINATION CARD CONTAINER -->
 <div id="nomination-card-container" class="fixed top-0 left-[-9999px] z-[9999]">
-    <!-- Card Dimensions: 450px x 800px (9:16 Ratio) -->
-    <div id="nomination-card" class="w-[450px] h-[800px] bg-slate-950 relative flex flex-col items-center justify-between py-10 overflow-hidden border-8 border-slate-900">
+    
+    <!-- CARD: 450px x 800px (Fixed Size) -->
+    <div id="nomination-card" class="w-[450px] h-[800px] bg-slate-950 relative flex flex-col items-center justify-between py-12 px-6 border-[8px] border-slate-900 overflow-hidden">
         
         <!-- Backgrounds -->
-        <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black z-0"></div>
-        <div class="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] z-0"></div>
-        
-        <!-- 1. HEADER: Dynamic Vote Title -->
-        <div class="relative z-10 w-full text-center mt-4">
-            <div class="flex items-center justify-center gap-2 mb-2 opacity-70">
-                <i data-lucide="shield-check" class="w-4 h-4 text-gold-400"></i>
-                <span class="text-[9px] font-bold text-gold-400 uppercase tracking-[0.3em]">Official Nominee</span>
+        <div class="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-slate-900 via-slate-950 to-black z-0"></div>
+        <div class="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-20 z-0"></div>
+        <div class="absolute inset-0 watermark-fingerprint opacity-10 z-0"></div>
+
+        <!-- 1. HEADER -->
+        <div class="relative z-10 w-full text-center flex-none">
+            <div class="flex items-center justify-center gap-2 mb-1 opacity-80">
+                <i data-lucide="shield-check" class="w-4 h-4 text-gold-500"></i>
+                <span class="text-[10px] font-bold text-slate-400 uppercase tracking-[0.3em]">Official Nominee</span>
             </div>
-            <h1 class="text-[6rem] leading-[0.8] font-black italic text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-200 to-slate-500 drop-shadow-2xl transform -skew-x-6">
+            
+            <!-- FIXED: Removed 'bg-clip-text' and 'text-transparent' to fix the white block glitch -->
+            <!-- ADDED: 'text-slate-100' and 'text-shadow' for premium look that works in download -->
+            <h1 class="text-[5.5rem] leading-[0.8] font-black italic text-slate-100 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] transform -skew-x-6" style="text-shadow: 0px 4px 15px rgba(255,255,255,0.1);">
                 VOTE
             </h1>
-        </div>
 
-        <!-- 2. PHOTO: Circular Premium Frame -->
-        <div class="relative z-10">
-            <!-- Animated Glow Ring -->
-            <div class="absolute inset-0 rounded-full border border-gold-500/30 scale-110 animate-pulse"></div>
-            <!-- Main Photo Circle -->
-            <div class="w-64 h-64 rounded-full p-1 bg-gradient-to-tr from-gold-600 via-gold-300 to-gold-600 shadow-[0_0_60px_rgba(234,179,8,0.2)]">
-                <div class="w-full h-full rounded-full overflow-hidden border-4 border-slate-900 bg-slate-800 relative">
-                     <img id="card-cand-img" src="" class="w-full h-full object-cover" crossorigin="anonymous">
-                </div>
-            </div>
-            <!-- Verified Checkmark -->
-            <div class="absolute bottom-2 right-4 bg-blue-600 text-white p-2 rounded-full border-[5px] border-slate-950 shadow-lg">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+            <div class="mt-2 inline-block px-4 py-1 rounded-full border border-gold-500/30 bg-gold-500/10 backdrop-blur-md">
+                <p class="text-[9px] font-bold text-gold-400 uppercase tracking-[0.2em]">SLC ELECTION 2025</p>
             </div>
         </div>
 
-        <!-- 3. INFO: Name & Role -->
-        <div class="relative z-10 text-center w-full px-4 -mt-4">
-            <h2 id="card-cand-name" class="text-4xl font-black text-white uppercase tracking-tighter drop-shadow-lg mb-2">
-                CANDIDATE NAME
-            </h2>
-            <div class="inline-block bg-slate-900/80 border border-emerald-500/30 px-6 py-2 rounded-full backdrop-blur-md">
-                <p id="card-cand-role" class="text-xs font-black text-emerald-400 uppercase tracking-[0.25em]">POSITION NAME</p>
-            </div>
-        </div>
-
-        <!-- 4. SYMBOL SECTION: Updated "Premium Ribbon" Design -->
-        <div class="relative z-10 w-full mt-2">
-            <!-- Gold Borders & Gradient -->
-            <div class="w-full py-5 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-y border-gold-500/50 flex items-center justify-between px-8 relative overflow-hidden">
+        <!-- 2. PHOTO (Fixed Container) -->
+        <div class="relative z-10 flex-none py-2">
+            <div class="relative w-64 h-64 mx-auto">
+                <div class="absolute inset-0 rounded-full border-2 border-gold-500/20 scale-110"></div>
+                <div class="absolute inset-0 rounded-full border border-dashed border-white/20 scale-125"></div>
                 
-                <!-- Background Glow behind Ribbon -->
-                <div class="absolute inset-0 bg-gold-500/5 pointer-events-none"></div>
-                
-                <!-- Left: Label -->
-                <div class="flex-1 text-right pr-6 border-r border-white/10">
-                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Your Symbol</p>
-                    <p class="text-xs font-black text-white uppercase tracking-widest">ON BALLOT</p>
-                </div>
-
-                <!-- Center: The Icon (Star of the show) -->
-                <div class="relative z-20 mx-4">
-                    <div class="absolute inset-0 bg-gold-500/20 blur-xl rounded-full"></div>
-                    <div id="card-cand-symbol-icon" class="relative w-16 h-16 text-gold-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]">
-                        <!-- Icon injected here -->
+                <div class="w-full h-full rounded-full p-1.5 bg-gradient-to-b from-gold-500 to-gold-700 shadow-[0_0_50px_rgba(234,179,8,0.25)]">
+                    <div class="w-full h-full rounded-full overflow-hidden bg-slate-800 border-4 border-slate-900 relative">
+                         <img id="card-cand-img" src="" class="w-full h-full object-cover" crossorigin="anonymous">
                     </div>
                 </div>
+                <div class="absolute bottom-1 right-2 bg-blue-600 text-white p-2 rounded-full border-[4px] border-slate-950 shadow-xl z-20">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                </div>
+            </div>
+        </div>
 
-                <!-- Right: Symbol Name -->
-                <div class="flex-1 text-left pl-6 border-l border-white/10">
-                    <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Look For</p>
-                    <p id="card-cand-symbol-text" class="text-xl font-black text-gold-400 uppercase tracking-wider italic">ANCHOR</p>
+        <!-- 3. NAME & ROLE -->
+        <div class="relative z-10 w-full text-center flex-none -mt-4">
+            <h2 id="card-cand-name" class="text-4xl font-black text-white uppercase tracking-tighter drop-shadow-lg leading-none mb-3">
+                CANDIDATE NAME
+            </h2>
+            <div class="inline-flex items-center px-6 py-2 bg-gradient-to-r from-emerald-900/60 to-emerald-800/60 border border-emerald-500/30 rounded-xl">
+                <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2"></span>
+                <p id="card-cand-role" class="text-xs font-black text-emerald-400 uppercase tracking-[0.2em]">POSITION NAME</p>
+            </div>
+        </div>
+
+        <!-- 4. SYMBOL SECTION -->
+        <div class="relative z-10 w-full flex-none px-2 mt-4">
+            <div class="w-full bg-slate-900 border border-gold-500/40 rounded-2xl p-1 relative overflow-hidden group shadow-2xl">
+                <div class="absolute inset-0 bg-gold-500/5"></div>
+                <div class="bg-slate-950/90 rounded-xl py-5 px-4 flex items-center justify-between backdrop-blur-sm">
+                    <div class="text-center w-1/3 border-r border-white/10">
+                        <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">Mark The</p>
+                        <p class="text-[10px] font-black text-white uppercase tracking-widest">SYMBOL</p>
+                    </div>
+                    <div class="relative w-1/3 flex justify-center">
+                         <div class="absolute inset-0 bg-gold-500/20 blur-xl rounded-full"></div>
+                         <div id="card-cand-symbol-icon" class="relative w-14 h-14 text-gold-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.8)]"></div>
+                    </div>
+                    <div class="text-center w-1/3 border-l border-white/10">
+                        <p class="text-[8px] text-slate-500 font-bold uppercase tracking-widest mb-1">On Ballot</p>
+                        <p id="card-cand-symbol-text" class="text-lg font-black text-gold-400 uppercase tracking-widest italic">ANCHOR</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- 5. FOOTER -->
-        <div class="relative z-10 w-full px-8 pb-4 text-center">
-            <div class="w-full py-4 bg-gold-600 rounded-xl shadow-[0_5px_20px_rgba(234,179,8,0.15)] mb-3">
-                <p class="text-[11px] font-black text-slate-950 uppercase tracking-[0.3em]">YOUR VOICE • YOUR CHOICE</p>
+        <div class="relative z-10 w-full text-center flex-none pt-4">
+            <div class="bg-gradient-to-r from-gold-600 to-gold-500 text-slate-950 font-black text-[10px] py-3 rounded-xl uppercase tracking-[0.25em] shadow-lg mb-2">
+                Your Voice • Your Choice
             </div>
-            <p class="text-[8px] font-bold text-slate-600 uppercase tracking-widest">SLC Secure Election Protocol 2026</p>
+            <p class="text-[7px] text-slate-600 font-bold uppercase tracking-widest">Verified by SLC Secure Protocol</p>
         </div>
 
     </div>
