@@ -468,40 +468,41 @@ function downloadNominationCard() {
 
 /* IN SCRIPT.JS - REPLACE THE updateNominationCard FUNCTION */
 
-/* IN SCRIPT.JS - REPLACE updateNominationCard FUNCTION */
+/* IN SCRIPT.JS - REPLACE downloadNominationCard FUNCTION */
 
-function updateNominationCard() {
+function downloadNominationCard() {
     if (!currentCandidateData) return;
+    notify("Generating card...", "loader");
     
-    // Name - Auto resize logic
-    const nameEl = document.getElementById('card-cand-name');
-    nameEl.innerText = currentCandidateData.name;
-    
-    // Reset classes base
-    nameEl.className = "font-black text-white uppercase tracking-tighter drop-shadow-lg leading-none mb-3";
-    
-    if (currentCandidateData.name.length > 15) {
-        nameEl.classList.add('text-2xl');
-    } else if (currentCandidateData.name.length > 10) {
-        nameEl.classList.add('text-3xl');
-    } else {
-        nameEl.classList.add('text-4xl');
-    }
-    
-    // Role
-    document.getElementById('card-cand-role').innerText = currentCandidateData.position;
-    
-    // Image
-    const imgEl = document.getElementById('card-cand-img');
-    imgEl.src = currentCandidateData.image;
-    
-    // Symbol Text
-    document.getElementById('card-cand-symbol-text').innerText = currentCandidateData.symbol.toUpperCase();
-    
-    // Symbol Icon
-    document.getElementById('card-cand-symbol-icon').innerHTML = `<i data-lucide="${currentCandidateData.symbol}" class="w-full h-full text-gold-400"></i>`;
-    
-    lucide.createIcons();
+    // Ensure data is fresh
+    updateNominationCard();
+
+    // Small delay to ensure DOM is ready
+    setTimeout(() => {
+        const element = document.getElementById('nomination-card');
+        
+        // Configuration to force exact sizing and fix scroll issues
+        const options = {
+            scale: 2, // High resolution
+            backgroundColor: "#020617",
+            useCORS: true, // Allow images
+            width: 450, // FORCE Exact width
+            height: 800, // FORCE Exact height
+            windowWidth: 450,
+            windowHeight: 800,
+            x: 0,
+            y: 0,
+            scrollY: -window.scrollY // Fixes shifting if user scrolled down
+        };
+
+        html2canvas(element, options).then(canvas => {
+            const link = document.createElement("a");
+            link.download = `SLC-Nomination-${currentCandidateData.name}.png`;
+            link.href = canvas.toDataURL("image/png");
+            link.click();
+            notify("Card downloaded!", "check-circle");
+        });
+    }, 500);
 }
 
 // ---------- AFTER REGISTRATION: handle "Go to Dashboard" ----------
