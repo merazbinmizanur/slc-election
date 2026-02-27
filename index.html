@@ -38,6 +38,8 @@
     <!-- ART & PATTERNS -->
     <div class="fixed inset-0 z-0 bg-grid-pattern opacity-30 pointer-events-none"></div>
     <div class="fixed inset-0 z-0 scanlines opacity-20 pointer-events-none"></div>
+    <!-- New voting illustration pattern -->
+    <div class="fixed inset-0 z-0 vote-pattern opacity-5 pointer-events-none"></div>
     <div class="fixed top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-emerald-900/10 blur-[150px] rounded-full pointer-events-none z-0"></div>
     
     <!-- Toast notification -->
@@ -194,7 +196,7 @@
             </div>
         </section>
 
-        <!-- VIEW 4: CANDIDATE REGISTRATION -->
+        <!-- VIEW 4: CANDIDATE REGISTRATION (Updated with new position and styled select) -->
         <section id="view-candidate-reg" class="hidden fade-in">
             <button onclick="switchView('landing')" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
                 <i data-lucide="arrow-left" class="w-3 h-3"></i> Back
@@ -206,13 +208,13 @@
                         <input type="text" id="candName" placeholder="Full Facebook Name" class="custom-input">
                         <input type="url" id="candFbLink" placeholder="Facebook Profile URL" class="custom-input">
                         <input type="url" id="candImage" placeholder="Photo Direct Link (postimages.org)" class="custom-input">
-                        <select id="candRole" class="custom-input">
-                            <option value="President">President</option>
-                            <option value="Vice-President">Vice-President</option>
-                            <option value="Tournament Manager">Tournament Manager</option>
-                            <option value="Recruitment Manager">Recruitment Manager</option>
-                            <option value="Disciplinary Manager">Disciplinary Manager</option>
-                        </select>
+<!-- Position selection grid (premium card style) -->
+<div class="mb-6">
+    <label class="text-xs font-bold text-slate-400 uppercase block mb-3">Select Your Position</label>
+    <div id="position-grid" class="grid grid-cols-2 gap-3">
+    </div>
+    <input type="hidden" id="selectedPosition" value="">
+</div>
                         <div>
                             <div class="flex justify-between items-center"><label class="text-xs font-bold text-slate-400 uppercase">Symbol</label><button onclick="refreshSymbols()" class="text-[10px] text-blue-400">↻ Refresh</button></div>
                             <div id="symbolGrid" class="grid grid-cols-5 gap-2 mt-3 p-2 bg-slate-950/50 rounded-2xl border border-white/5 max-h-[200px] overflow-y-auto custom-scrollbar"></div>
@@ -250,7 +252,7 @@
             <button id="id-next-btn" onclick="handleIDNext()" class="w-full max-w-xs mx-auto py-4 bg-emerald-600 text-white text-xs font-black rounded-2xl uppercase tracking-[0.2em]">Go to Dashboard</button>
         </section>
 
-        <!-- VIEW 7: VOTER DASHBOARD -->
+        <!-- VIEW 7: VOTER DASHBOARD (Added countdown label) -->
         <section id="view-voter-dashboard" class="hidden fade-in pt-4">
             <button onclick="logout()" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
                 <i data-lucide="log-out" class="w-3 h-3"></i> Logout
@@ -260,7 +262,7 @@
                 <h2 class="text-2xl font-black text-white uppercase tracking-widest">Voter Dashboard</h2>
                 <p id="voter-dashboard-name" class="text-sm text-emerald-400 font-bold uppercase mt-1"></p>
                 
-                <!-- NEW: Voter ID Display -->
+                <!-- Voter ID Display -->
                 <div class="mt-4 inline-flex items-center gap-3 bg-slate-900 border border-white/10 px-4 py-2 rounded-xl">
                     <span class="text-[10px] text-slate-500 font-bold uppercase tracking-wider">My ID:</span>
                     <span id="voter-dashboard-id-display" class="text-white font-mono font-bold tracking-wider">---</span>
@@ -276,7 +278,8 @@
             </div>
 
             <div class="bg-slate-900/50 rounded-2xl p-6 border border-white/5 mb-6 text-center">
-                <p class="text-xs text-slate-400 uppercase tracking-widest mb-2">Voting Period</p>
+                <!-- Label for countdown status -->
+                <p id="countdown-label" class="text-xs text-slate-400 uppercase tracking-widest mb-2">Voting Period</p>
                 <div id="countdown-timer" class="text-2xl font-black text-gold-400">-- : -- : --</div>
                 <div id="voter-action-area" class="mt-4"></div>
             </div>
@@ -287,7 +290,7 @@
             </div>
         </section>
 
-        <!-- VIEW 8: CANDIDATE DASHBOARD -->
+        <!-- VIEW 8: CANDIDATE DASHBOARD (Download button removed, only preview remains) -->
         <section id="view-candidate-dashboard" class="hidden fade-in pt-4">
             <button onclick="logout()" class="mb-6 flex items-center gap-2 text-xs font-black text-slate-500 uppercase tracking-widest hover:text-white transition-colors">
                 <i data-lucide="log-out" class="w-3 h-3"></i> Logout
@@ -303,9 +306,7 @@
                 <button onclick="previewNominationCard()" class="w-full py-4 bg-white/5 border border-white/10 text-gold-500 text-xs font-black rounded-2xl uppercase tracking-[0.2em] hover:bg-white/10 transition-all flex items-center justify-center gap-2">
                     <i data-lucide="eye" class="w-4 h-4"></i> Preview Nomination Card
                 </button>
-                <button onclick="downloadNominationCard()" class="w-full py-4 bg-gold-600 text-white text-xs font-black rounded-2xl uppercase tracking-[0.2em] shadow-lg shadow-gold-900/30 hover:scale-[1.02] transition-transform flex items-center justify-center gap-2">
-                    <i data-lucide="download" class="w-4 h-4"></i> Download Nomination Card
-                </button>
+                <!-- Download button removed as requested -->
             </div>
 
             <div class="mt-8 moving-border-gold p-[1.5px] rounded-[2rem]">
@@ -378,13 +379,29 @@
         </div>
     </div>
 
-    <!-- Preview Card -->
+    <!-- NEW Enhanced Preview Card Modal with zoom, pan, and instructions -->
     <div id="modal-preview-card" class="fixed inset-0 z-[200] bg-slate-950/95 backdrop-blur-xl hidden flex items-center justify-center p-4">
-        <div class="relative max-w-md w-full">
-            <button onclick="closeModal('modal-preview-card')" class="absolute -top-2 -right-2 z-10 w-10 h-10 bg-slate-800 rounded-full border border-white/10 flex items-center justify-center hover:bg-slate-700">
+        <div class="relative w-full max-w-lg bg-slate-900 rounded-3xl p-4">
+            <button onclick="closeModal('modal-preview-card')" class="absolute -top-2 -right-2 z-20 w-10 h-10 bg-slate-800 rounded-full border border-white/10 flex items-center justify-center hover:bg-slate-700">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
-            <div id="preview-card-container" class="scale-75 origin-top"></div>
+            
+            <!-- Instructions for screenshot -->
+            <p class="text-xs text-center text-slate-400 mb-3 px-6">Perfectly fit the image, then take a screenshot, then crop nicely and use it to ask votes from your voters.</p>
+            
+            <!-- Toolbar -->
+            <div class="flex justify-center gap-4 mb-4">
+                <button onclick="previewZoomOut()" class="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center hover:bg-slate-700"><i data-lucide="minus" class="w-4 h-4"></i></button>
+                <button onclick="previewReset()" class="px-4 py-2 rounded-full bg-slate-800 border border-white/10 text-xs font-bold text-white hover:bg-slate-700">Reset</button>
+                <button onclick="previewZoomIn()" class="w-10 h-10 rounded-full bg-slate-800 border border-white/10 flex items-center justify-center hover:bg-slate-700"><i data-lucide="plus" class="w-4 h-4"></i></button>
+            </div>
+            
+            <!-- Viewport with pan enabled -->
+            <div id="preview-viewport" class="relative w-full aspect-square overflow-hidden rounded-2xl bg-slate-950 border border-white/10" style="touch-action: none;">
+                <div id="preview-card-wrapper" class="absolute inset-0 flex items-center justify-center" style="cursor: grab; transform: scale(1) translate(0px, 0px);">
+                    <div id="preview-card-container" class="w-[600px] h-[600px] flex-shrink-0"></div>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -424,7 +441,7 @@
                         </div>
                         <button onclick="revealResults()" class="w-full py-3 bg-emerald-600 rounded-xl text-xs font-black text-white uppercase tracking-wider">Publish Results</button>
                         
-                        <!-- NEW: Sign Out Button -->
+                        <!-- Sign Out Button -->
                         <button onclick="closeModal('modal-admin')" class="w-full py-3 bg-slate-800 border border-white/10 rounded-xl text-xs font-black text-slate-400 uppercase tracking-wider hover:text-white transition mt-4 flex items-center justify-center gap-2">
                             <i data-lucide="log-out" class="w-4 h-4"></i> Sign Out
                         </button>
@@ -434,7 +451,7 @@
         </div>
     </div>
 
-    <!-- NOMINATION CARD CONTAINER (Updated to Square 600x600) -->
+    <!-- NOMINATION CARD CONTAINER (Square 600x600) -->
     <div id="nomination-card-container" class="fixed top-0 left-[-9999px] z-[9999]">
         <!-- SQUARE 600x600 -->
         <div id="nomination-card" class="w-[600px] h-[600px] bg-slate-950 relative flex flex-col items-center justify-between py-8 px-6 border-[8px] border-slate-900 overflow-hidden">
@@ -450,7 +467,6 @@
                     <i data-lucide="shield-check" class="w-5 h-5 text-gold-500"></i>
                     <span class="text-[12px] font-bold text-slate-400 uppercase tracking-[0.3em]">Official Nominee</span>
                 </div>
-                <!-- Cleaned up text styling for HTML2Canvas compatibility -->
                 <h1 class="text-[5rem] leading-[0.9] font-black italic text-slate-100 drop-shadow-[0_10px_10px_rgba(0,0,0,0.5)] transform -skew-x-6" style="text-shadow: 0px 4px 15px rgba(255,255,255,0.1);">
                     VOTE
                 </h1>
