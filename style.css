@@ -21,6 +21,12 @@ body {
     pointer-events: none;
 }
 
+/* New voting illustration pattern */
+.vote-pattern {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='1' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6'%3E%3C/path%3E%3Cpolyline points='15 3 21 3 21 9'%3E%3C/polyline%3E%3Cline x1='10' y1='14' x2='21' y2='3'%3E%3C/line%3E%3C/svg%3E");
+    background-repeat: repeat;
+}
+
 /* Floating Animation for Art */
 @keyframes float {
     0%, 100% { transform: translateY(0px); }
@@ -61,6 +67,16 @@ body {
     border-color: #3b82f6;
     box-shadow: 0 0 20px rgba(59, 130, 246, 0.15);
 }
+
+/* Styled select dropdown */
+select.custom-input {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23f59e0b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 1rem center;
+    padding-right: 2.5rem;
+}
+
 .input-group { position: relative; }
 .input-group i {
     position: absolute; left: 1rem; top: 50%; transform: translateY(-50%);
@@ -139,4 +155,45 @@ body {
     padding: 1rem;
     border: 1px solid rgba(245, 158, 11, 0.2);
     box-shadow: 0 10px 25px -5px rgba(0,0,0,0.5);
+}
+
+/* Preview modal viewport */
+#preview-viewport {
+    touch-action: none; /* Prevents page scroll while panning inside */
+}
+#preview-card-wrapper {
+    transition: transform 0.05s linear;
+    will-change: transform;
+}
+/* Position cards (premium, matching symbol grid) */
+.position-card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 16px;
+    padding: 1rem 0.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 70px;
+    word-break: break-word;
+}
+
+.position-card:hover {
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(245,158,11,0.3);
+    transform: translateY(-2px);
+}
+
+.position-card.selected {
+    background: rgba(245,158,11,0.15);
+    border-color: #f59e0b;
+    box-shadow: 0 0 20px rgba(245,158,11,0.2);
+}
+
+.position-card.selected span {
+    color: #f59e0b;
+    font-weight: 900;
 }
