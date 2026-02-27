@@ -13,12 +13,42 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // Constants
+// ===== PREMIUM FOOTBALL / ESPORTS SYMBOLS =====
+// All icons are valid in Lucide – football, whistle, and others are included.
 const ALL_SYMBOLS = [
-    "shield", "sword", "zap", "crown", "star", "anchor", "target", "flame", "gem", "ghost",
-    "skull", "trophy", "key", "lock", "map", "compass", "flag", "award", "gift", "heart",
-    "moon", "sun", "cloud", "umbrella", "droplet", "feather", "eye", "camera", "video", "music"
+    // ⚽ Football Core
+    "goal", // scoring
+    "shirt", // team jersey
+    "flag", // corner flag
+    "shield", // defense
+    "target", // accuracy / shooting
+    
+    // 🏆 Awards & Victory
+    "trophy", // champion
+    "medal", // winner
+    "award", // recognition
+    "crown", // king of the game
+    "star", // top player
+    "gem", // valuable asset
+    "flame", // on fire
+    "zap", // speed / power
+    
+    // 🎮 eSports & Gaming
+    "gamepad", // modern controller
+    "joystick", // classic arcade
+    "monitor", // gaming screen
+    "cpu", // processing power
+    "radio", // team communication
+    "mic", // shoutcasting
+    "speaker", // crowd audio
+    "camera", // streaming / replay
+    
+    // 📊 Strategy & Team
+    "map", // tactics / formation
+    "compass", // direction / positioning
 ];
-const POSITIONS = ["President", "Vice-President", "Tournament Manager", "Recruitment Manager", "Disciplinary Manager"];
+// Added AWAY MANAGER to positions
+const POSITIONS = ["President", "Vice-President", "Tournament Manager", "Recruitment Manager", "Disciplinary Manager", "Player Affairs Manager"];
 
 // Global state
 let currentID = null;
@@ -28,6 +58,13 @@ let currentCandidateData = null;
 let selectedVotes = {};
 let selectedSymbol = "";
 let countdownInterval = null;
+
+// Preview state for zoom/pan
+let previewScale = 1;
+let previewX = 0;
+let previewY = 0;
+let isDragging = false;
+let dragStart = { x: 0, y: 0 };
 
 // Init
 document.addEventListener('DOMContentLoaded', () => {
@@ -44,7 +81,11 @@ function switchView(id) {
         target.classList.remove('hidden');
         window.scrollTo(0, 0);
     }
-    if (id === 'candidate-reg') refreshSymbols();
+    if (id === 'candidate-reg') {
+        refreshSymbols();
+        renderPositionGrid();
+        selectedSymbol = ""; // Reset selected symbol
+    }
 }
 
 function notify(msg, icon = 'info') {
@@ -108,6 +149,30 @@ async function refreshSymbols() {
     } catch (e) {
         grid.innerHTML = `<div class="col-span-5 text-rose-500 text-xs">Error loading symbols</div>`;
     }
+}
+// Render position cards (similar to symbol grid)
+function renderPositionGrid() {
+    const grid = document.getElementById('position-grid');
+    if (!grid) return;
+    
+    grid.innerHTML = POSITIONS.map(pos => `
+        <div class="position-card group" onclick="selectPosition('${pos}', this)">
+            <span class="text-sm font-black text-slate-300 group-hover:text-white transition-colors">${pos}</span>
+        </div>
+    `).join('');
+    
+    // Clear any previous selection
+    document.getElementById('selectedPosition').value = '';
+}
+
+// Handle position selection
+function selectPosition(pos, element) {
+    // Remove 'selected' class from all cards
+    document.querySelectorAll('.position-card').forEach(card => card.classList.remove('selected'));
+    // Add 'selected' class to clicked card
+    element.classList.add('selected');
+    // Store the selected position in hidden input
+    document.getElementById('selectedPosition').value = pos;
 }
 
 function selectSymbol(s, el) {
@@ -281,7 +346,8 @@ async function registerCandidate() {
     const name = document.getElementById('candName').value.trim();
     const fbLink = document.getElementById('candFbLink').value.trim();
     const image = document.getElementById('candImage').value.trim();
-    const role = document.getElementById('candRole').value;
+    const role = document.getElementById('selectedPosition').value;
+if (!role) return notify("Please select a position", "alert-circle");
 
     if (!name) return notify("Please enter full Facebook name", "alert-circle");
     if (!fbLink) return notify("Facebook profile link is required", "alert-circle");
@@ -365,7 +431,6 @@ async function loadCandidateDashboard() {
 function updateNominationCard() {
     if (!currentCandidateData) return;
     
-    // Name - Auto resize logic for Square Card (max width constrained)
     const nameEl = document.getElementById('card-cand-name');
     nameEl.innerText = currentCandidateData.name;
     nameEl.className = "font-black text-white uppercase tracking-tighter drop-shadow-lg leading-none mb-2";
@@ -388,7 +453,7 @@ function updateNominationCard() {
     lucide.createIcons();
 }
 
-// ---------- PREVIEW LOGIC (Scales down for phone view) ----------
+// ---------- ENHANCED PREVIEW with ZOOM & PAN ----------
 function previewNominationCard() {
     if (!currentCandidateData) return;
     
@@ -401,77 +466,106 @@ function previewNominationCard() {
     const clone = original.cloneNode(true);
     clone.id = 'preview-card';
     
-    // Square Scale Logic
-    const cardSize = 600;
-    const availableWidth = Math.min(window.innerWidth - 40, 350); // Max width for modal
-    const scale = availableWidth / cardSize;
+    // Reset preview state
+    previewScale = 1;
+    previewX = 0;
+    previewY = 0;
+    updatePreviewTransform();
     
-    const wrapper = document.createElement('div');
-    wrapper.style.width = `${availableWidth}px`;
-    wrapper.style.height = `${availableWidth}px`; // Square ratio
-    wrapper.style.overflow = 'hidden';
-    wrapper.style.margin = '0 auto';
-    wrapper.style.borderRadius = '16px';
-    wrapper.style.boxShadow = '0 25px 50px -12px rgba(0, 0, 0, 0.5)';
+    container.appendChild(clone);
     
-    clone.style.transform = `scale(${scale})`;
-    clone.style.transformOrigin = 'top left';
-    clone.style.position = 'absolute';
-    clone.style.top = '0';
-    clone.style.left = '0';
+    // Set up drag events
+    const wrapper = document.getElementById('preview-card-wrapper');
+    wrapper.style.cursor = 'grab';
     
-    wrapper.appendChild(clone);
-    container.appendChild(wrapper);
+    // Remove old listeners to avoid duplicates
+    wrapper.removeEventListener('mousedown', startDrag);
+    wrapper.removeEventListener('touchstart', startDragTouch);
+    window.removeEventListener('mousemove', onDrag);
+    window.removeEventListener('mouseup', stopDrag);
+    window.removeEventListener('touchmove', onDragTouch);
+    window.removeEventListener('touchend', stopDrag);
+    
+    wrapper.addEventListener('mousedown', startDrag);
+    wrapper.addEventListener('touchstart', startDragTouch);
     
     lucide.createIcons();
     openModal('modal-preview-card');
 }
 
-// ---------- DOWNLOAD LOGIC (Crystal Clear, No Fading) ----------
-function downloadNominationCard() {
-    if (!currentCandidateData) return;
-    notify("Generating HQ card...", "loader");
-    updateNominationCard();
-
-    setTimeout(() => {
-        // Clone the card to the BODY (visible but hidden by z-index)
-        // This fixes the "blank/faded" issue caused by capturing hidden elements
-        const original = document.getElementById('nomination-card');
-        const clone = original.cloneNode(true);
-        
-        clone.id = "temp-download-card";
-        clone.style.position = "fixed";
-        clone.style.top = "0";
-        clone.style.left = "0";
-        clone.style.zIndex = "-9999"; // Behind everything
-        clone.style.visibility = "visible"; // Must be visible to browser engine
-        
-        document.body.appendChild(clone);
-
-        const options = {
-            scale: 3, // 3x Resolution for Crystal Clear
-            backgroundColor: "#020617",
-            useCORS: true,
-            width: 600,
-            height: 600
-        };
-
-        html2canvas(clone, options).then(canvas => {
-            const link = document.createElement("a");
-            link.download = `SLC-Nomination-${currentCandidateData.name}.png`;
-            link.href = canvas.toDataURL("image/png");
-            link.click();
-            
-            // Clean up
-            document.body.removeChild(clone);
-            notify("Card downloaded!", "check-circle");
-        }).catch(err => {
-            console.error(err);
-            document.body.removeChild(clone);
-            notify("Download failed", "alert-circle");
-        });
-    }, 500);
+function startDrag(e) {
+    e.preventDefault();
+    isDragging = true;
+    dragStart.x = e.clientX - previewX;
+    dragStart.y = e.clientY - previewY;
+    document.getElementById('preview-card-wrapper').style.cursor = 'grabbing';
+    window.addEventListener('mousemove', onDrag);
+    window.addEventListener('mouseup', stopDrag);
 }
+
+function startDragTouch(e) {
+    e.preventDefault();
+    if (e.touches.length === 1) {
+        isDragging = true;
+        dragStart.x = e.touches[0].clientX - previewX;
+        dragStart.y = e.touches[0].clientY - previewY;
+        document.getElementById('preview-card-wrapper').style.cursor = 'grabbing';
+        window.addEventListener('touchmove', onDragTouch, { passive: false });
+        window.addEventListener('touchend', stopDrag);
+    }
+}
+
+function onDrag(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    previewX = e.clientX - dragStart.x;
+    previewY = e.clientY - dragStart.y;
+    updatePreviewTransform();
+}
+
+function onDragTouch(e) {
+    if (!isDragging) return;
+    e.preventDefault();
+    if (e.touches.length === 1) {
+        previewX = e.touches[0].clientX - dragStart.x;
+        previewY = e.touches[0].clientY - dragStart.y;
+        updatePreviewTransform();
+    }
+}
+
+function stopDrag() {
+    isDragging = false;
+    document.getElementById('preview-card-wrapper').style.cursor = 'grab';
+    window.removeEventListener('mousemove', onDrag);
+    window.removeEventListener('mouseup', stopDrag);
+    window.removeEventListener('touchmove', onDragTouch);
+    window.removeEventListener('touchend', stopDrag);
+}
+
+function previewZoomIn() {
+    previewScale = Math.min(previewScale + 0.25, 3);
+    updatePreviewTransform();
+}
+
+function previewZoomOut() {
+    previewScale = Math.max(previewScale - 0.25, 0.5);
+    updatePreviewTransform();
+}
+
+function previewReset() {
+    previewScale = 1;
+    previewX = 0;
+    previewY = 0;
+    updatePreviewTransform();
+}
+
+function updatePreviewTransform() {
+    const wrapper = document.getElementById('preview-card-wrapper');
+    if (wrapper) {
+        wrapper.style.transform = `scale(${previewScale}) translate(${previewX}px, ${previewY}px)`;
+    }
+}
+
 // ---------- AFTER REGISTRATION ----------
 function handleIDNext() {
     if (currentRole === 'voter') {
@@ -765,4 +859,4 @@ function toggleSection(section) {
         chevron.style.transform = 'rotate(0deg)';
     }
     lucide.createIcons();
-    }
+}
