@@ -649,53 +649,72 @@ function openVoteConfirmModal() {
         return notify("Please select a candidate for every position", "alert-circle");
     }
     document.getElementById('confirmID').value = '';
+    document.getElementById('confirmToken').value = ''; // NEW: Clear token field
     openModal('modal-confirm-vote');
 }
 
 async function submitFinalVote() {
     const inputID = document.getElementById('confirmID').value.trim().replace(/\s/g, '').toUpperCase();
+    const inputToken = document.getElementById('confirmToken').value.trim().toUpperCase(); // NEW
+    
     if (inputID !== currentID) return notify("Incorrect ID. Please try again.", "lock");
-
+    if (!inputToken) return notify("Please enter the Secret Token.", "lock"); // NEW
+    if (inputToken.length < 5) return notify("Invalid Token format.", "alert-circle");
+    
     const btn = document.getElementById('btn-final-cast');
     btn.innerHTML = "Processing...";
     btn.disabled = true;
-
+    
     const voterRef = db.collection("voters").doc(currentID);
     const globalRef = db.collection("settings").doc("global");
-
+    const tokenRef = db.collection("tokens").doc(inputToken); // NEW: Token Reference
+    
     try {
         await db.runTransaction(async (t) => {
+            // ১. রিড অপারেশন (Firestore এর নিয়ম অনুযায়ী আগে সব রিড করতে হয়)
             const vDoc = await t.get(voterRef);
+            const tDoc = await t.get(tokenRef); // টোকেন ডাটাবেজে আছে কি না চেক
+            
+            // ২. ভ্যালিডেশন
             if (!vDoc.exists) throw "Invalid ID";
             if (vDoc.data().hasVoted) throw "Already Voted";
-
-            t.update(voterRef, { hasVoted: true, timestamp: Date.now() });
+            
+            if (!tDoc.exists) throw "Invalid Token"; // টোকেন না পেলে এরর
+            if (tDoc.data().isUsed) throw "Token Used"; // টোকেন ব্যবহৃত হয়ে থাকলে এরর
+            
+            // ৩. রাইট অপারেশন (ভোট কাউন্ট এবং টোকেন স্ট্যাটাস আপডেট)
+            t.update(voterRef, { hasVoted: true, timestamp: Date.now(), usedToken: inputToken });
+            t.update(tokenRef, { isUsed: true, usedBy: currentID, usedAt: Date.now() }); // টোকেনটি 'Used' করে দেওয়া হলো
             t.set(globalRef, { totalVotesCast: firebase.firestore.FieldValue.increment(1) }, { merge: true });
-
+            
             for (let pos in selectedVotes) {
                 t.update(db.collection("candidates").doc(selectedVotes[pos]), {
                     voteCount: firebase.firestore.FieldValue.increment(1)
                 });
             }
         });
-
+        
         closeModal('modal-confirm-vote');
         confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#10b981', '#f59e0b', '#ffffff'] });
         notify("Vote successfully cast!", "check-circle");
-setTimeout(() => {
-    if (currentRole === 'voter') {
-        loadVoterDashboard();
-        switchView('voter-dashboard');
-    } else if (currentRole === 'candidate') {
-        loadCandidateDashboard();
-        switchView('candidate-dashboard');
-    }
-}, 2000);
+        
+        setTimeout(() => {
+            if (currentRole === 'voter') {
+                loadVoterDashboard();
+                switchView('voter-dashboard');
+            } else if (currentRole === 'candidate') {
+                loadCandidateDashboard();
+                switchView('candidate-dashboard');
+            }
+        }, 2000);
         selectedVotes = {};
     } catch (e) {
         btn.innerHTML = "Verify & Cast";
         btn.disabled = false;
-        notify(e === "Already Voted" ? "You have already voted!" : "Submission error.", "alert-circle");
+        if (e === "Already Voted") notify("You have already voted!", "alert-circle");
+        else if (e === "Invalid Token") notify("Token is incorrect. Contact Admin.", "lock");
+        else if (e === "Token Used") notify("This token has already been used!", "lock");
+        else notify("Submission error.", "alert-circle");
     }
 }
 
@@ -755,11 +774,12 @@ function openAdminLogin() {
 
 function verifyAdmin() {
     const key = document.getElementById('adminKey').value;
-    if (key === '00110011') {
+    if (key === '00110011') { // আপনার অ্যাডমিন পাসওয়ার্ড
         document.getElementById('admin-login-view').classList.add('hidden');
         document.getElementById('admin-dashboard-view').classList.remove('hidden');
         loadAdminData();
         loadAdminVotingPeriod();
+        listenToAdminTokens(); // NEW: টোকেন লোড করার কমান্ড
     } else {
         notify("Access Denied", "lock");
     }
@@ -935,4 +955,74 @@ function updateCandidateCountdown(start, end, now) {
             actionArea.innerHTML = `<p class="text-sm text-slate-400">Voting period has ended</p>`;
         }
     }
+}
+
+// ---------- NEW: TOKEN SYSTEM FUNCTIONS ----------
+
+// টোকেন জেনারেট করার ফাংশন
+async function generateAdminTokens() {
+    const amount = parseInt(document.getElementById('tokenAmount').value);
+    if (!amount || amount <= 0 || amount > 100) return notify("Enter a valid number (1-100)", "alert-circle");
+    
+    const btn = document.getElementById('btn-generate-tokens');
+    btn.innerText = "Wait...";
+    btn.disabled = true;
+    
+    const batch = db.batch();
+    for (let i = 0; i < amount; i++) {
+        // TKN-XXXXXX ফরম্যাটে র‍্যান্ডম কোড তৈরি
+        const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
+        const tokenStr = `TKN-${randomStr}`;
+        const tokenRef = db.collection("tokens").doc(tokenStr);
+        batch.set(tokenRef, { isUsed: false, createdAt: Date.now(), usedBy: null });
+    }
+    
+    try {
+        await batch.commit();
+        notify(`${amount} Tokens Generated!`, "check-circle");
+        document.getElementById('tokenAmount').value = '';
+    } catch (e) {
+        notify("Failed to generate tokens", "alert-circle");
+    }
+    btn.innerText = "Generate";
+    btn.disabled = false;
+}
+
+// অ্যাডমিন প্যানেলে রিয়েল-টাইম টোকেন লিস্ট দেখার ফাংশন
+function listenToAdminTokens() {
+    db.collection("tokens").orderBy("createdAt", "desc").onSnapshot(snap => {
+        const list = document.getElementById('admin-token-list');
+        if (!list) return;
+        
+        if (snap.empty) {
+            list.innerHTML = `<p class="text-[10px] text-slate-500 text-center py-2 uppercase">No tokens generated yet</p>`;
+            document.getElementById('unused-token-count').innerText = "0";
+            return;
+        }
+        
+        let html = '';
+        let unusedCount = 0;
+        
+        snap.docs.forEach(doc => {
+            const data = doc.data();
+            if (!data.isUsed) unusedCount++;
+            
+            const statusColor = data.isUsed ? 'text-rose-500' : 'text-emerald-400';
+            const statusText = data.isUsed ? 'Used' : 'Available';
+            const copyBtn = !data.isUsed ? `<button onclick="navigator.clipboard.writeText('${doc.id}'); notify('Copied!','copy')" class="ml-2 text-slate-500 hover:text-white"><i data-lucide="copy" class="w-3 h-3"></i></button>` : '';
+            
+            html += `
+                <div class="flex justify-between items-center py-2 border-b border-white/5 px-2">
+                    <div class="flex items-center">
+                        <span class="font-mono text-white text-[11px] select-all tracking-wider">${doc.id}</span>
+                        ${copyBtn}
+                    </div>
+                    <span class="text-[9px] font-black uppercase tracking-widest ${statusColor}">${statusText}</span>
+                </div>
+            `;
+        });
+        list.innerHTML = html;
+        document.getElementById('unused-token-count').innerText = unusedCount;
+        lucide.createIcons();
+    });
 }
