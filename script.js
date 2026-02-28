@@ -420,9 +420,20 @@ async function candidateLogin() {
 async function loadCandidateDashboard() {
     document.getElementById('candidate-dashboard-name').innerText = currentName;
     document.getElementById('candidate-dashboard-id').querySelector('span').innerText = currentID;
+    
+    // Listen to total votes
     db.collection("settings").doc("global").onSnapshot((doc) => {
         if (doc.exists) {
             document.getElementById('candidate-dashboard-votes').innerText = doc.data().totalVotesCast || 0;
+        }
+    });
+    
+    // Load voting period and listen for changes
+    loadVotingPeriodForCandidate();
+    db.collection("settings").doc("global").onSnapshot(() => {
+        // Only reload if candidate dashboard is visible
+        if (document.getElementById('view-candidate-dashboard') && !document.getElementById('view-candidate-dashboard').classList.contains('hidden')) {
+            loadVotingPeriodForCandidate();
         }
     });
 }
@@ -671,10 +682,15 @@ async function submitFinalVote() {
         closeModal('modal-confirm-vote');
         confetti({ particleCount: 200, spread: 100, origin: { y: 0.6 }, colors: ['#10b981', '#f59e0b', '#ffffff'] });
         notify("Vote successfully cast!", "check-circle");
-        setTimeout(() => {
-            loadVoterDashboard();
-            switchView('voter-dashboard');
-        }, 2000);
+setTimeout(() => {
+    if (currentRole === 'voter') {
+        loadVoterDashboard();
+        switchView('voter-dashboard');
+    } else if (currentRole === 'candidate') {
+        loadCandidateDashboard();
+        switchView('candidate-dashboard');
+    }
+}, 2000);
         selectedVotes = {};
     } catch (e) {
         btn.innerHTML = "Verify & Cast";
@@ -859,4 +875,64 @@ function toggleSection(section) {
         chevron.style.transform = 'rotate(0deg)';
     }
     lucide.createIcons();
+}
+
+// Load voting period for candidate dashboard
+async function loadVotingPeriodForCandidate() {
+    const settingsDoc = await db.collection("settings").doc("global").get();
+    if (!settingsDoc.exists) return;
+    
+    const data = settingsDoc.data();
+    const start = data.votingStart ? new Date(data.votingStart) : null;
+    const end = data.votingEnd ? new Date(data.votingEnd) : null;
+    const now = new Date();
+    
+    updateCandidateCountdown(start, end, now);
+    if (countdownInterval) clearInterval(countdownInterval);
+    countdownInterval = setInterval(() => updateCandidateCountdown(start, end, new Date()), 1000);
+}
+
+// Update candidate countdown display
+function updateCandidateCountdown(start, end, now) {
+    const timerEl = document.getElementById('candidate-countdown-timer');
+    const labelEl = document.getElementById('candidate-countdown-label');
+    const actionArea = document.getElementById('candidate-action-area');
+    
+    if (!timerEl || !labelEl || !actionArea) return;
+    
+    if (!start || !end) {
+        timerEl.innerText = '-- : -- : --';
+        labelEl.innerText = 'Voting period not set';
+        actionArea.innerHTML = '';
+        return;
+    }
+    
+    if (now < start) {
+        const diff = start - now;
+        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((diff / (1000 * 60 * 60)) % 24);
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        timerEl.innerText = `${days}d ${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+        labelEl.innerText = 'Voting starts in';
+        if (actionArea.innerHTML.indexOf("Voting not yet started") === -1) {
+            actionArea.innerHTML = `<p class="text-sm text-slate-400">Voting not yet started</p>`;
+        }
+    } else if (now >= start && now <= end) {
+        const diff = end - now;
+        const hours = Math.floor(diff / (1000 * 60 * 60));
+        const minutes = Math.floor((diff / (1000 * 60)) % 60);
+        const seconds = Math.floor((diff / 1000) % 60);
+        timerEl.innerText = `${hours.toString().padStart(2,'0')}:${minutes.toString().padStart(2,'0')}:${seconds.toString().padStart(2,'0')}`;
+        labelEl.innerText = 'Voting ends in';
+        if (actionArea.innerHTML.indexOf("enterBooth") === -1) {
+            actionArea.innerHTML = `<button onclick="enterBooth()" class="w-full py-4 bg-emerald-600 text-white text-xs font-black rounded-2xl uppercase tracking-[0.2em] shadow-lg shadow-emerald-900/30 hover:scale-[1.02] transition-transform">Go to Voting Booth</button>`;
+        }
+    } else if (now > end) {
+        timerEl.innerText = '00:00:00';
+        labelEl.innerText = 'Voting ended';
+        if (actionArea.innerHTML.indexOf("Voting period has ended") === -1) {
+            actionArea.innerHTML = `<p class="text-sm text-slate-400">Voting period has ended</p>`;
+        }
+    }
 }
