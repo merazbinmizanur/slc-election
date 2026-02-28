@@ -376,7 +376,9 @@
                 <i data-lucide="shield-check" class="w-12 h-12 text-emerald-400 mx-auto mb-4"></i>
                 <h3 class="text-lg font-black text-white uppercase tracking-widest mb-2">Confirm Your Identity</h3>
                 <p class="text-xs text-slate-400 font-bold uppercase tracking-widest mb-4">Your ID: <span id="modal-current-id" class="text-emerald-400"></span></p>
-                <input type="text" id="confirmID" placeholder="Type your ID to confirm" class="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-center text-lg font-black text-emerald-400 uppercase tracking-widest outline-none mb-6">
+<input type="text" id="confirmID" placeholder="Type your ID to confirm" class="w-full bg-slate-950 border border-white/10 rounded-2xl p-4 text-center text-lg font-black text-emerald-400 uppercase tracking-widest outline-none mb-3">
+<!-- নতুন টোকেন ইনপুট -->
+<input type="text" id="confirmToken" placeholder="ENTER SECRET TOKEN" class="w-full bg-slate-950 border border-gold-500/30 focus:border-gold-500 rounded-2xl p-4 text-center text-lg font-black text-gold-400 uppercase tracking-widest outline-none mb-6 shadow-[0_0_15px_rgba(245,158,11,0.1)]">
                 <div class="flex gap-3">
                     <button onclick="closeModal('modal-confirm-vote')" class="flex-1 py-4 bg-slate-800 rounded-2xl text-xs font-black text-slate-400 uppercase">Cancel</button>
                     <button id="btn-final-cast" onclick="submitFinalVote()" class="flex-[2] py-4 bg-emerald-600 rounded-2xl text-xs font-black text-white uppercase shadow-lg">Verify & Cast</button>
@@ -445,6 +447,23 @@
                             <p class="text-xs text-slate-400 uppercase tracking-wider mb-3">Standings</p>
                             <div id="admin-candidate-list" class="space-y-2 text-xs"></div>
                         </div>
+                        <!-- NEW: Token Generator Card -->
+<div class="bg-slate-800/50 rounded-2xl p-4 border border-white/5">
+    <div class="flex justify-between items-center mb-3">
+        <p class="text-xs text-slate-400 uppercase tracking-wider">Secret Tokens</p>
+        <span class="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-full font-bold"><span id="unused-token-count">0</span> Available</span>
+    </div>
+    <div class="flex gap-2 mb-3">
+        <input type="number" id="tokenAmount" placeholder="Qty (e.g. 50)" min="1" max="100" class="w-1/3 bg-slate-950 border border-white/10 rounded-xl p-3 text-xs text-center text-white outline-none">
+        <button id="btn-generate-tokens" onclick="generateAdminTokens()" class="w-2/3 py-2 bg-gold-600 rounded-xl text-xs font-black text-white uppercase shadow-lg">Generate</button>
+    </div>
+    <div class="bg-slate-950 rounded-xl p-2 max-h-[150px] overflow-y-auto custom-scrollbar">
+        <div id="admin-token-list" class="space-y-1">
+            <p class="text-[10px] text-slate-500 text-center py-2 uppercase">No tokens generated yet</p>
+        </div>
+    </div>
+</div>
+<!-- End Token Generator Card -->
                         <button onclick="revealResults()" class="w-full py-3 bg-emerald-600 rounded-xl text-xs font-black text-white uppercase tracking-wider">Publish Results</button>
                         
                         <!-- Sign Out Button -->
