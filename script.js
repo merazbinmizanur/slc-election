@@ -1,5 +1,5 @@
 /* --- START OF FILE script.js --- */
-
+const CURRENT-APP-VERSION = "1.0.0";
 // Firebase config
 const firebaseConfig = {
     apiKey: "AIzaSyAaQykg-W2vxI6gnClCPdusj5NyE_RMpEo",
